@@ -76,16 +76,11 @@ gunzip WGS/STAL_ANGSDgenome.fasta.gz
 
 Estimate allelic site frequencies (SAF) in ANGSD
 ```
-angsd   -ref WGS/BFAL_genome.fasta \
-        -anc WGS/STAL_ANGSDgenome.fasta \
-        -bam reseq/${BAMLIST} \
-        -rf reseq/${REGION}.txt \
-        -out reseq/${OUTFILE} \
+angsd   -ref WGS/BFAL_genome.fasta -anc WGS/STAL_ANGSDgenome.fasta -out reseq/${OUTFILE} \
+        -bam reseq/${BAMLIST} -rf reseq/${REGION}.txt \
         -nThreads ${NTHREADS} \
-        -remove_bads 1 -uniqueOnly 1 -only_proper_pairs 0 \
-        -minMapQ 20 -minQ 20 -trim 0 \
-        -doMajorMinor 1 -skipTriallelic 1 \
-        -GL 1 -doSaf 1
+        -remove_bads 1 -uniqueOnly 1 -only_proper_pairs 0 -minMapQ 20 -minQ 20 -trim 0 \
+        -doMajorMinor 1 -skipTriallelic 1 -GL 1 -doSaf 1
 ```
 Estimate unfolded 1D-SFS
 ```
