@@ -106,9 +106,10 @@ realSFS fst stats ${F1}_${F2}.fst.idx -win 100000 -step 50000 > ${F1}_${F2}.fst.
 
 
 
+
 ## **Species demography**
 
-#### 1. PSMC of WGS data (5 species)
+###### 1. PSMC (WGS data, all 5 species)
 Replace gTIME by the generation time of each species accordingly: BFAL(10), LAAL(17.2), STAL(8), WAAL(10), WAL(20).
 ```
 for SP in BFAL LAAL STAL WAAL WAL
@@ -119,7 +120,7 @@ do
     psmc_plot.pl -u 2.89e-09 -g ${gTIME} -p ${SP}_PSMC_plot2 ${SP}.psmc
 done
 ```
-#### 2. Stairway Plot
+###### 2. Stairway Plot
 ```
 # Generate & run the batch file
 for SP in BFAL LAAL; do
@@ -127,9 +128,9 @@ java -cp $PATH/TO/stairway_plot_es Stairbuilder ${SP}.blueprint
 bash ${SP}.blueprint.sh
 done
 ```
-#### 3. dadi
+###### 3. dadi
 See "Run_dadi.py"
 
-#### 4.fastsimcoal2
+###### 4.fastsimcoal2
 See "Run_fastsimcoal2.sh"
 
