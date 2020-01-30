@@ -10,12 +10,8 @@ Alignment
 ```
 for sp in BFAL LAAL STAL WAAL WAL
 do
-    SatsumaSynteny2 -q WGS/${sp}_genome.fasta \
-                    -t REF/Gallus_gallus.GRCg6a.dna.toplevel_chrom.fa \
-                    -o Satsuma/${sp} \
-                    -sl_mem 100 -slaves 4 -threads ${NTHREADS} \
-                    -km_mem 100 -km_sync 1 -q_chunk 1000 \
-                    -min_prob 0.9999
+    SatsumaSynteny2 -q WGS/${sp}_genome.fasta -t REF/Gallus_gallus.GRCg6a.dna.toplevel_chrom.fa -o Satsuma/${sp} \
+                    -sl_mem 100 -slaves 4 -threads ${NTHREADS} -km_mem 100 -km_sync 1 -q_chunk 1000 -min_prob 0.9999
 done
 ```
 
@@ -23,9 +19,7 @@ Pseudochromome
 ```
 for sp in BFAL LAAL STAL WAAL WAL
 do
-    Chromosemble -q WGS/${sp}_genome.fasta \
-                 -t REF/Gallus_gallus.GRCg6a.dna.toplevel_chrom.fa \
-                 -o WGS/${sp}_superscaffolds.fasta \
+    Chromosemble -q WGS/${sp}_genome.fasta -t REF/Gallus_gallus.GRCg6a.dna.toplevel_chrom.fa -o WGS/${sp}_superscaffolds.fasta \
                  -n ${NTHREADS} -thorough 0 -pseudochr 1 -s 0
 done
 ```
@@ -52,17 +46,16 @@ bash run_GATK_pipeline.sh list_sample_BFAL_LAAL.txt
 
 #### **Identify sex-linked scaffolds**
 
-1. From read coverage difference between male and females samples
+1. From SatsumaSynteny2 mapping results
+2. From read coverage difference between male and females samples
 ```
 samtools idxstats reseq/${SAMPLE}.realigned.bam > reseq/idxstats_${SAMPLE}.txt
 
 Rscript ReadCov_male_females.R 
 ```
-2. From SatsumaSynteny2 mapping results
-
 Combine list of scaffolds mapped onto galGal6 Z/W chromosomes (Satsuma results) and list of scaffolds with 2x lower coverage in females than males ("Read_cov_male_females.R" results).
 
-#### **Infer SFS for BFAL and LAAL populations**
+#### **Genetic diversity within BFAL and LAAL populations**
 
 Use short-tailed albatross *Phoebastria albatrus* (STAL) to infer ancestral states of alleles.
 ```
@@ -95,7 +88,10 @@ angsd -ref ${REF} -anc ${ANC} -bam ${BAMLIST} -rf ${REGION} \
 thetaStat do_stat reseq/${OUTFILE}.thetas.idx -outnames reseq/${OUTFILE}.thetas.stats #global values
 thetaStat do_stat reseq/${OUTFILE}.thetas.idx -win 100000 -step 50000 -outnames reseq/${OUTFILE}.thetas.100kb.slwin #slidin-window values
 ```
-Estimate unfolded 2D-SFS & 
+
+#### **Genetic differentiation among and within BFAL and LAAL populations**
+
+1. Infer Fst from unfolded 2D-SFS
 ```
 realSFS reseq/${F1}.saf.idx reseq/${F2}.saf.idx -P ${NTHREADS} > reseq/${F1}_${F2}_2DSFS.sfs #without bootstrap
 realSFS reseq/${F1}.saf.idx reseq/${F2}.saf.idx -P ${NTHREADS} -bootstrap 20 > reseq/${F1}_${F2}_2DSFS.sfs #with 20 bootstraps
@@ -106,5 +102,34 @@ realSFS fst stats ${F1}_${F2}.fst.idx > ${F1}_${F2}.fst.stats #global Fst values
 realSFS fst stats ${F1}_${F2}.fst.idx -win 100000 -step 50000 > ${F1}_${F2}.fst.100kb.slwin #sliding-window Fst values
 ```
 
+2. Genetic structure between all 5 species and between BFAL/LAAL was infered using PCA (see script `plot_PCA.sh`)
 
+
+
+### **Species demography**
+
+# 1. PSMC of WGS data (5 species)
+Replace gTIME by the generation time of each species accordingly: BFAL(10), LAAL(17.2), STAL(8), WAAL(10), WAL(20).
+```
+for SP in BFAL LAAL STAL WAAL WAL
+do
+    bash WGS_preprocess.sh -i ${SP}
+    fq2psmcfa ${SP}_BAM_sam_bcf_vcf2.consensus.fq ${SP}.psmcfa
+    psmc -p “4+30*2+4+6+10” -o ${SP}.psmc ${SP}.psmcfa
+    psmc_plot.pl -u 2.89e-09 -g ${gTIME} -p ${SP}_PSMC_plot2 ${SP}.psmc
+done
+```
+# 2. Stairway Plot
+```
+# Generate & run the batch file
+for SP in BFAL LAAL; do
+java -cp $PATH/TO/stairway_plot_es Stairbuilder ${SP}.blueprint
+bash ${SP}.blueprint.sh
+done
+```
+# 3. dadi
+See "Run_dadi.py"
+
+# 4.fastsimcoal2
+See "Run_fastsimcoal2.sh"
 
