@@ -1,0 +1,21 @@
+# input setting
+popid: BFAL_autosome_1DSFS
+nseq: 32
+L: 1111399256 # total number of observed nucleic sites, including polymorphic and monomorphic
+whether_folded: false
+SFS: 6185253.893177 732219.531401 419821.569372 302661.010156 234529.468124 173899.095039 173976.154858 119209.382818 92009.662381 99254.582366 71483.989911 82262.245473 64391.772917 61107.527323 53395.395872 196080.817443 28383.487391 40873.723145 40902.182698 51602.021641 35275.399369 46008.289011 40734.650302 40869.342035 41853.720335 43577.634462 42846.981935 48164.584645 51576.249136 58493.458015 83224.866573
+#smallest_size_of_SFS_bin_used_for_estimation: 1 #default is 1. (2 = ignore singletons)
+#largest_size_of_SFS_bin_used_for_estimation: 33 #default is nseq-1 (for unfolded SFS, nseq-2 for folded SFS). (nseq-2 = ignore signletons)
+nrand: 8	15	23	30 #number of random break points for each try. Suggested 4 number: (nseq-2)/4, (nseq-2)/2, (nseq-2)*3/4, nseq-2.
+project_dir: BFAL_autosome_1DSFS
+stairway_plot_dir: stairway_plot_es
+ninput: 200 #nb of input files to be created for estimation (similar to bootstrap)
+mu: 2.89e-09 #assumed mutation rate per site per generation
+year_per_generation: 10
+plot_title: BFAL_autosome_1DSFS
+xrange: 0.1,10000 # time (scaled in 1k individual) range; format xmin,xmax. Default 0,0 (ie. automatically scaled by results)
+yrange: 0,0 # Ne (scaled in 1k individual) range; format xmin,xmax. Default 0,0 (ie. automatically scaled by results)
+xspacing: 2 # X axis spacing for plotting
+yspacing: 2 # Y axis spacing for plotting
+fontsize: 12 # Font size for plotting 
+
