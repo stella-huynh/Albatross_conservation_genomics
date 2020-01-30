@@ -88,22 +88,22 @@ realSFS reseq/${OUTFILE}.saf.idx -P ${NTHREADS} > reseq/${OUTFILE}_1DSFS.sfs #wi
 realSFS reseq/${OUTFILE}.saf.idx -P ${NTHREADS} -bootstrap 20 > reseq/${OUTFILE}_1DSFS.sfs #with 20 bootstraps
 
 angsd -ref ${REF} -anc ${ANC} -bam ${BAMLIST} -rf ${REGION} \
-      -out ${oDIR}/${group} -nThreads ${nt} \
+      -out reseq/${OUTFILE} -nThreads ${NTHREADS} \
       -remove_bads 1 -uniqueOnly 1 -only_proper_pairs 0 -minMapQ 20 \
-      -GL 1 -doSaf 1 -doThetas 1 -pest ${oDIR}/${OUTFILE}_1DSFS.sfs
+      -GL 1 -doSaf 1 -doThetas 1 -pest reseq/${OUTFILE}_1DSFS.sfs
 
-${machDIR}/thetaStat do_stat ${oDIR}/${group}.thetas.idx -outnames ${oDIR}/${group}.thetas.stats #global values
-${machDIR}/thetaStat do_stat ${oDIR}/${group}.thetas.idx -win 100000 -step 50000 -outnames ${oDIR}/${group}.thetas.100kb.slwin #slidin-window values
+thetaStat do_stat reseq/${OUTFILE}.thetas.idx -outnames reseq/${OUTFILE}.thetas.stats #global values
+thetaStat do_stat reseq/${OUTFILE}.thetas.idx -win 100000 -step 50000 -outnames reseq/${OUTFILE}.thetas.100kb.slwin #slidin-window values
 ```
 Estimate unfolded 2D-SFS & 
 ```
-realSFS reseq/${F1}.saf.idx reseq/${F2}.saf.idx -P ${NTHREADS} > reseq/${OUTFILE}_1DSFS.sfs #without bootstrap
-realSFS reseq/${F1}.saf.idx reseq/${F2}.saf.idx -P ${NTHREADS} -bootstrap 20 > reseq/${OUTFILE}_1DSFS.sfs #with 20 bootstraps
+realSFS reseq/${F1}.saf.idx reseq/${F2}.saf.idx -P ${NTHREADS} > reseq/${F1}_${F2}_2DSFS.sfs #without bootstrap
+realSFS reseq/${F1}.saf.idx reseq/${F2}.saf.idx -P ${NTHREADS} -bootstrap 20 > reseq/${F1}_${F2}_2DSFS.sfs #with 20 bootstraps
 
-realSFS fst index reseq/${F1}.saf.idx reseq/${F2}.saf.idx -sfs ${OUT}_2DSFS.sfs -fstout reseq/${F1}_${F2} -P ${NTHREADS}
+realSFS fst index reseq/${F1}.saf.idx reseq/${F2}.saf.idx -sfs ${F1}_${F2}_2DSFS.sfs -fstout reseq/${F1}_${F2} -P ${NTHREADS}
 
-realSFS fst stats ${OUT}.fst.idx > ${OUT}.fst.stats #global Fst values
-realSFS fst stats ${OUT}.fst.idx -win 100000 -step 50000 > ${OUT}.fst.100kb.slwin #sliding-window Fst values
+realSFS fst stats ${F1}_${F2}.fst.idx > ${F1}_${F2}.fst.stats #global Fst values
+realSFS fst stats ${F1}_${F2}.fst.idx -win 100000 -step 50000 > ${F1}_${F2}.fst.100kb.slwin #sliding-window Fst values
 ```
 
 
