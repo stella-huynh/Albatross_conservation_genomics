@@ -56,7 +56,7 @@ bash run_GATK_pipeline.sh list_sample_BFAL_LAAL.txt
 ```
 samtools idxstats reseq/${SAMPLE}.realigned.bam > reseq/idxstats_${SAMPLE}.txt
 
-Rscript Read_cov_male_females.R 
+Rscript ReadCov_male_females.R 
 ```
 2. From SatsumaSynteny2 mapping results
 
