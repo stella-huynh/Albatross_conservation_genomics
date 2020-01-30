@@ -1,0 +1,20 @@
+# input setting
+popid: LAAL_autosome_1DSFS
+nseq: 30
+L: 1111131210 # total number of observed nucleic sites, including polymorphic and monomorphic
+whether_folded: false
+SFS: 3725823.874043 699959.114082 458297.775820 335592.974066 262364.688493 202945.847012 205232.728501 144616.828682 120395.023731 123034.750770 100168.791073 102758.306098 83532.139980 69958.336628 247943.935745 36236.802129 58499.557809 65873.016742 56710.118641 63429.987429 51076.455939 58599.829948 54904.063981 55379.110145 57748.562204 59444.851296 64594.477720 71497.065411 88655.408839
+#smallest_size_of_SFS_bin_used_for_estimation: 1 #default is 1. (2 = ignore singletons)
+#largest_size_of_SFS_bin_used_for_estimation: 33 #default is nseq-1 (for unfolded SFS, nseq-2 for folded SFS). (nseq-2 = ignore signletons)
+nrand: 8	14	21	28 #number of random break points for each try. Suggested 4 number: (nseq-2)/4, (nseq-2)/2, (nseq-2)*3/4, nseq-2.
+project_dir: LAAL_autosome_1DSFS
+stairway_plot_dir: stairway_plot_es
+ninput: 200 #nb of input files to be created for estimation (similar to bootstrap)
+mu: 2.89e-09 #assumed mutation rate per site per generation
+year_per_generation: 17.2
+plot_title: LAAL_autosome_1DSFS
+xrange: 10,6000 # time (scaled in 1k individual) range; format xmin,xmax. Default 0,0 (ie. automatically scaled by results)
+yrange: 0,0 # Ne (scaled in 1k individual) range; format xmin,xmax. Default 0,0 (ie. automatically scaled by results)
+xspacing: 2 # X axis spacing for plotting
+yspacing: 2 # Y axis spacing for plotting
+fontsize: 12 # Font size for plotting 
