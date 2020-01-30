@@ -13,9 +13,8 @@ ninput: 200 #nb of input files to be created for estimation (similar to bootstra
 mu: 2.89e-09 #assumed mutation rate per site per generation
 year_per_generation: 10
 plot_title: BFAL_autosome_1DSFS
-xrange: 0.1,10000 # time (scaled in 1k individual) range; format xmin,xmax. Default 0,0 (ie. automatically scaled by results)
+xrange: 10,6000 # time (scaled in 1k individual) range; format xmin,xmax. Default 0,0 (ie. automatically scaled by results)
 yrange: 0,0 # Ne (scaled in 1k individual) range; format xmin,xmax. Default 0,0 (ie. automatically scaled by results)
 xspacing: 2 # X axis spacing for plotting
 yspacing: 2 # Y axis spacing for plotting
 fontsize: 12 # Font size for plotting 
-
