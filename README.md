@@ -82,15 +82,28 @@ angsd   -ref WGS/BFAL_genome.fasta -anc WGS/STAL_ANGSDgenome.fasta -out reseq/${
         -remove_bads 1 -uniqueOnly 1 -only_proper_pairs 0 -minMapQ 20 -minQ 20 -trim 0 \
         -doMajorMinor 1 -skipTriallelic 1 -GL 1 -doSaf 1
 ```
-Estimate unfolded 1D-SFS
+Estimate unfolded 1D-SFS & diversity statistics
 ```
 realSFS reseq/${OUTFILE}.saf.idx -P ${NTHREADS} > reseq/${OUTFILE}_1DSFS.sfs #without bootstrap
 realSFS reseq/${OUTFILE}.saf.idx -P ${NTHREADS} -bootstrap 20 > reseq/${OUTFILE}_1DSFS.sfs #with 20 bootstraps
+
+angsd -ref ${REF} -anc ${ANC} -bam ${BAMLIST} -rf ${REGION} \
+      -out ${oDIR}/${group} -nThreads ${nt} \
+      -remove_bads 1 -uniqueOnly 1 -only_proper_pairs 0 -minMapQ 20 \
+      -GL 1 -doSaf 1 -doThetas 1 -pest ${oDIR}/${OUTFILE}_1DSFS.sfs
+
+${machDIR}/thetaStat do_stat ${oDIR}/${group}.thetas.idx -outnames ${oDIR}/${group}.thetas.stats #global values
+${machDIR}/thetaStat do_stat ${oDIR}/${group}.thetas.idx -win 100000 -step 50000 -outnames ${oDIR}/${group}.thetas.100kb.slwin #slidin-window values
 ```
-Estimate unfolded 2D-SFS
+Estimate unfolded 2D-SFS & 
 ```
 realSFS reseq/${F1}.saf.idx reseq/${F2}.saf.idx -P ${NTHREADS} > reseq/${OUTFILE}_1DSFS.sfs #without bootstrap
 realSFS reseq/${F1}.saf.idx reseq/${F2}.saf.idx -P ${NTHREADS} -bootstrap 20 > reseq/${OUTFILE}_1DSFS.sfs #with 20 bootstraps
+
+realSFS fst index reseq/${F1}.saf.idx reseq/${F2}.saf.idx -sfs ${OUT}_2DSFS.sfs -fstout reseq/${F1}_${F2} -P ${NTHREADS}
+
+realSFS fst stats ${OUT}.fst.idx > ${OUT}.fst.stats #global Fst values
+realSFS fst stats ${OUT}.fst.idx -win 100000 -step 50000 > ${OUT}.fst.100kb.slwin #sliding-window Fst values
 ```
 
 
