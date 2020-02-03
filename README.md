@@ -105,7 +105,23 @@ realSFS fst stats ${F1}_${F2}.fst.idx -win 100000 -step 50000 > ${F1}_${F2}.fst.
 2. Genetic structure between all 5 species and between BFAL/LAAL was infered using PCA (see script `plot_PCA.sh`)
 
 
+#### **Runs of homozygosity (ROHs)**
+```
+for SP in BFAL LAAL
+do
+    angsd -ref BFAL_genome.fasta -anc STAL_ANGSDgenome.fasta -rf list_allscafs.txt -out ${SP}_lightfilt -nThreads ${NTHREADS} \
+          -remove_bads 1 -uniqueOnly 1 -only_proper_pairs 0 -minMapQ 20 -minQ 20 -trim 0 \
+          -GL 1 -doMajorMinor 1 -skipTriallelic 1 -doMaf -1 -SNP_pval 1e-3 -doGeno-4 -doPost 1 -postCutoff 0.95 -doPlink 2
 
+    for SCAFF in {1..3479}
+    do
+        plink --tped ${SP}_allscafs_lightfilt.tped --tfam ${SP}_allscafs_lightfilt.tfam --maf 0.05 --nonfounders \
+              --homozyg-snp 50 --homozyg-density 50 --homozyg-gap 1000 --homozyg-window-snp 50 --homozyg-window-het 1 --homozyg-window-missing 5 --homozyg-window-threshold 0.05 \
+              #--geno 0.1 --maf 0.05 --hwe 1e-5 \
+              --out ${oDIR}/BFAL_${SCAFF}_lfilt_w50_h1
+    done
+done
+```
 
 ## **Species demography**
 
