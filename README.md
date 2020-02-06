@@ -109,7 +109,7 @@ realSFS fst stats ${F1}_${F2}.fst.idx -win 100000 -step 50000 > ${F1}_${F2}.fst.
 ```
 for SP in BFAL LAAL
 do
-    angsd -ref BFAL_genome.fasta -anc STAL_ANGSDgenome.fasta -rf list_allscafs.txt -out ${SP}_lightfilt -nThreads ${NTHREADS} \
+    angsd -bam ${SP}.bamlist -rf ${REGION} -out ${SP}_lightfilt -nThreads ${NTHREADS} \
           -remove_bads 1 -uniqueOnly 1 -only_proper_pairs 0 -minMapQ 20 -minQ 20 -trim 0 \
           -GL 1 -doMajorMinor 1 -skipTriallelic 1 -doMaf -1 -SNP_pval 1e-3 -doGeno-4 -doPost 1 -postCutoff 0.95 -doPlink 2
 
