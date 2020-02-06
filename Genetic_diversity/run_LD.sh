@@ -1,5 +1,8 @@
 #!/bin/bash
 
+## This script was run for files with PREFIX:
+## - BFAL_autosome / LAAL_autosome / BFAL_allscafs / LAAL_allscafs
+
 PREFIX=$1
 BAMLIST=$2
 REGION=$3
@@ -41,4 +44,18 @@ ngsLD --pos ${PREFIX}.glf.pos \
       --n_threads ${NTHREADS} \
       --out ${PREFIX}_filt_samp05.ld	# Add more filters...
 
+
+## Use scripts provided with ngsLD to plot LD decay ##
+
+fit_LDdecay.R  --ld_files ${oDIR}/ld_file_${SP}.list \
+               --col 7 --ld r2 --fit_boot 10 \
+               --out ${oDIR}/${SP}_autosome_filt_LDdecay.pdf &
+
+
+# Use scripts provided with ngsLD to plot extract LD-unlinked SNPs ##
+
+prune_graph.pl --in_file ${oDIR}/${SP}_autosome_filt_samp05.ld \
+               --field_dist 7 --field_weight 11 \
+               --max_kb_dist 1 --min_weight 0.5 \
+               --out ${oDIR}/${SP}_autosome_filt_unlinked.id &
 
