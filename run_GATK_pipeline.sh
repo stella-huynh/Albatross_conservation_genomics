@@ -16,47 +16,47 @@ do
   
     # Trim PE reads
     NGmerge -1 reseq/${SAMPLE}_${REP}_R1.fastq.gz -2 reseq/${SAMPLE}_${REP}_R2.fastq.gz \
-			      -a -v -n ${NTHREADS} -o reseq/${SAMPLE}_${REP}.trimmed
+	    -a -v -n ${NTHREADS} -o reseq/${SAMPLE}_${REP}.trimmed
 
     # Convert FastQ file to unaligned SAM file
     java -Xmx8g -XX:ParallelGCThreads=1 -jar ${machDIR1}/picard.jar FastqToSam \
-	        FASTQ=reseq/${SAMPLE}_${REP}.trimmed_1.fastq.gz \
-	        FASTQ2=reseq/${SAMPLE}_${REP}.trimmed_2.fastq.gz \
-	        OUTPUT=reseq/${SAMPLE}_${REP}.fastqtosam.bam \
-	        READ_GROUP_NAME=${FLOWCELL}.${LANE} \
-	        SAMPLE_NAME=${SAMPLE} \
-	        LIBRARY_NAME=${SAMPLE} \
-        	PLATFORM_UNIT=${FLOWCELL}.${LANE}.${SAMPLE} \
-        	PLATFORM=ILLUMINA \
-        	SEQUENCING_CENTER=BAUER \
-        	RUN_DATE=${DATE}
+	  FASTQ=reseq/${SAMPLE}_${REP}.trimmed_1.fastq.gz \
+	  FASTQ2=reseq/${SAMPLE}_${REP}.trimmed_2.fastq.gz \
+	  OUTPUT=reseq/${SAMPLE}_${REP}.fastqtosam.bam \
+	  READ_GROUP_NAME=${FLOWCELL}.${LANE} \
+	  SAMPLE_NAME=${SAMPLE} \
+	  LIBRARY_NAME=${SAMPLE} \
+          PLATFORM_UNIT=${FLOWCELL}.${LANE}.${SAMPLE} \
+          PLATFORM=ILLUMINA \
+          SEQUENCING_CENTER=BAUER \
+          RUN_DATE=${DATE}
 
     # Rewrite SAM file with new adapter-trimming tags
     java -Xmx8g -XX:ParallelGCThreads=1 -jar ${machDIR1}/picard.jar MarkIlluminaAdapters \
-	        I=reseq/${SAMPLE}_${REP}.fastqtosam.bam \
-	        O=reseq/${SAMPLE}_${REP}_markilluminaadapters.bam \
-	        M=reseq/${SAMPLE}_${REP}_markilluminaadapters_metrics.txt \
-	        TMP_DIR=./tmp
+	  I=reseq/${SAMPLE}_${REP}.fastqtosam.bam \
+	  O=reseq/${SAMPLE}_${REP}_markilluminaadapters.bam \
+	  M=reseq/${SAMPLE}_${REP}_markilluminaadapters_metrics.txt \
+	  TMP_DIR=./tmp
 
     # Convert SAM file to FastQ.
     java -Xmx8g -XX:ParallelGCThreads=4 -jar ${machDIR1}/picard.jar SamToFastq \
-	        I=reseq/${SAMPLE}_${REP}_markilluminaadapters.bam \
-	        FASTQ=reseq/${SAMPLE}_${REP}_samtofastq_interleaved.fq \
-	        CLIPPING_ATTRIBUTE=XT CLIPPING_ACTION=2 INTERLEAVE=true NON_PF=true \
-	        TMP_DIR=./tmp
+	  I=reseq/${SAMPLE}_${REP}_markilluminaadapters.bam \
+	  FASTQ=reseq/${SAMPLE}_${REP}_samtofastq_interleaved.fq \
+	  CLIPPING_ATTRIBUTE=XT CLIPPING_ACTION=2 INTERLEAVE=true NON_PF=true \
+	  TMP_DIR=./tmp
 
     # Align raw reads onto REF genome using BWA
     bwa mem -M -t 1 -p WGS/BFAL_genome.fasta \
-		                reseq/${SAMPLE}_${REP}_samtofastq_interleaved.fq \
-		                > reseq/${SAMPLE}_${REP}_bwa_mem.sam
+	    reseq/${SAMPLE}_${REP}_samtofastq_interleaved.fq \
+	    > reseq/${SAMPLE}_${REP}_bwa_mem.sam
 
     # Merge info from aligned SAM file and unmapped BAM file in a new BAM file.
     java -Xmx8g -XX:ParallelGCThreads=4 -jar ${machDIR1}/picard.jar MergeBamAlignment \
           ALIGNED_BAM=reseq/${SAMPLE}_${REP}_bwa_mem.sam \
-	        UNMAPPED_BAM=reseq/${SAMPLE}_${REP}.fastqtosam.bam \
+	  UNMAPPED_BAM=reseq/${SAMPLE}_${REP}.fastqtosam.bam \
           OUTPUT=reseq/${SAMPLE}_${REP}_mergebamalign.bam \
           R=WGS/BFAL_genome.fasta \
-	        CREATE_INDEX=true \
+	  CREATE_INDEX=true \
           ADD_MATE_CIGAR=true \
           CLIP_ADAPTERS=false \
           CLIP_OVERLAPPING_READS=true \
@@ -75,12 +75,12 @@ do
     # Mark duplicates
     java -Xmx8g -XX:ParallelGCThreads=1 -jar ${machDIR1}/picard.jar MarkDuplicates
           TMP_DIR=${oDIR}/tmp \
-    		  I=reseq/${SAMPLE}_1st_mergebamalign.bam \
-    		  I=reseq/${SAMPLE}_2nd_mergebamalign.bam \
-    	  	I=reseq/${SAMPLE}_3rd_mergebamalign.bam \
-    	  	O=reseq/${SAMPLE}.dedup.bam \
-    	  	METRICS_FILE=reseq/${SAMPLE}.dedup.metrics.txt \
-      		REMOVE_DUPLICATES=false TAGGING_POLICY=All
+    	  I=reseq/${SAMPLE}_1st_mergebamalign.bam \
+    	  I=reseq/${SAMPLE}_2nd_mergebamalign.bam \
+    	  I=reseq/${SAMPLE}_3rd_mergebamalign.bam \
+    	  O=reseq/${SAMPLE}.dedup.bam \
+    	  METRICS_FILE=reseq/${SAMPLE}.dedup.metrics.txt \
+      	  REMOVE_DUPLICATES=false TAGGING_POLICY=All
 
     # Index BAM file
     java -Xmx8g -XX:ParallelGCThreads=2 -jar ${machDIR1}/picard.jar BuildBamIndex \
@@ -89,10 +89,10 @@ do
     # Generate summary of alignment metrics from BAM files
     java -Xmx8g -XX:ParallelGCThreads=2 -jar ${machDIR1}/picard.jar CollectAlignmentSummaryMetrics \
           I=reseq/${SAMPLE}.dedup.sorted.bam \
-        	R=WGS/BFAL_genome.fasta \
-	        METRIC_ACCUMULATION_LEVEL=SAMPLE \
-	        METRIC_ACCUMULATION_LEVEL=READ_GROUP \
-	        O=reseq/${SAMPLE}.alignment_metrics.txt
+          R=WGS/BFAL_genome.fasta \
+	  METRIC_ACCUMULATION_LEVEL=SAMPLE \
+	  METRIC_ACCUMULATION_LEVEL=READ_GROUP \
+	  O=reseq/${SAMPLE}.alignment_metrics.txt
 
     # Report on the validity of BAM files relative to the SMA format specification
     java -Xmx8g -XX:ParallelGCThreads=1 -jar ${machDIR}/picard.jar ValidateSamFile \
