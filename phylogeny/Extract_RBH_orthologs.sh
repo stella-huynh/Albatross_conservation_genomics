@@ -72,7 +72,9 @@ nohup ./run_parse_orthoGenes.sh WAL 5 gene_set/ > nohup_parseOrtho_WAL.out 2>&1 
 	grep -c "^>${SP}" 05_RBlast/orthologs/multiple_hits/gene_set/Blastallp_ALB_ORTH${i}.fasta >> check_orth_${SP}.txt
    done
    
-   occ=$(uniq check_orth_${SP}.txt) ; echo "${SP} : ${occ} orthologous sequences extracted."
+   occ=$(cat check_orth_${SP}.txt | paste -sd+ | bc) ; echo "${SP} : ${occ} orthologous sequences extracted."
+   if [[ $occ != 12619 ]]; then grep -v -n 1 check_orth_${SP}.txt > check_orth_${SP}.err ; fi #retrieve $LOC lines that has failed
+   
  done
 
 
