@@ -1,3 +1,11 @@
+#parameters: Cloutier, A., Sackton, T. B., Grayson, P., Clamp, M., Baker, A. J., & Edwards, S. V. (2019). 
+#            Whole-Genome Analyses Resolve the Phylogeny of Flightless Birds (Palaeognathae) in the Presence of an Empirical Anomaly Zone. 
+#            doi: 10.1093/sysbio/syz019
+
+#Blastn searches used NCBI’s default “somewhat similar” parameters 
+#(eValue 1e−10, perc_identity 10, penalty −3, reward 2, gapopen 5, gapextend 2, and word size 11)
+
+
 for SP1 in EURHE FULGL
 do
     for SP2 in BFAL LAAL STAL WAAL WAL
