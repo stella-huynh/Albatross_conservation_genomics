@@ -69,10 +69,10 @@ nohup ./run_parse_orthoGenes.sh WAL 5 gene_set/ > nohup_parseOrtho_WAL.out 2>&1 
  for SP in BFAL LAAL STAL WAAL WAL; do
  
    for i in {1..12619}; do
-	grep -c ">${SP}" 05_RBlast/orthologs/multiple_hits/gene_set/Blastallp_ALB_ORTH${i}.fasta >> tmp.txt
+	grep -c "^>${SP}" 05_RBlast/orthologs/multiple_hits/gene_set/Blastallp_ALB_ORTH${i}.fasta >> check_orth_${SP}.txt
    done
    
-   occ=$(uniq tmp.txt) ; echo "${SP} : ${occ}"
+   occ=$(uniq check_orth_${SP}.txt) ; echo "${SP} : ${occ} orthologous sequences extracted."
  done
 
 
