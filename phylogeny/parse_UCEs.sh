@@ -19,6 +19,7 @@ do
 
         seqkit grep -n -p "${SP}" $file | seqkit replace --pattern "${SP}" --replacement "${SP}_${PREFIX}" >> ${oDIR}/UCEs_${SP}.fasta
 
+        seqkit seq -g -w 0 UCEs_${SP}.fasta > UCEs_unaligned_${SP}.fasta
 
 done
 
