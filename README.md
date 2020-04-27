@@ -69,10 +69,18 @@ gunzip WGS/STAL_ANGSDgenome.fasta.gz
 
 Estimate allelic site frequencies (SAF) in ANGSD
 ```
+# !! Run on base-recalibrated BAM files following GATK - BSQR procedure for non-model organism !! #
+
+NIND=$(wc -l $BAMLIST)
+minI=$(echo $NIND | awk '{printf "%.0f", $0 * 0.6 }') #60% of NIND
+
 angsd   -ref WGS/BFAL_genome.fasta -anc WGS/STAL_ANGSDgenome.fasta -out reseq/${OUTFILE} \
         -bam reseq/${BAMLIST} -rf reseq/${REGION}.txt \
         -nThreads ${NTHREADS} \
-        -remove_bads 1 -uniqueOnly 1 -only_proper_pairs 0 -minMapQ 20 -minQ 20 -trim 0 \
+        -remove_bads 1 -trim 0 -minMapQ 20 -minQ 20 -uniqueOnly 1 -only_proper_pairs 0 \
+        -baq 1 -C 50 \
+        -doCounts -1 -minInd $minI -setMinDepth $NIND -setMaxDepth $nMAX \
+        -dosnpstat 1 -doHWE 1 -sb_pval 5e-7 -qscore_pval 5e-9 -HWE_pval 5e-7 \
         -doMajorMinor 1 -skipTriallelic 1 -GL 1 -doSaf 1
 ```
 Estimate unfolded 1D-SFS & diversity statistics
@@ -82,8 +90,12 @@ realSFS reseq/${OUTFILE}.saf.idx -P ${NTHREADS} -bootstrap 20 > reseq/${OUTFILE}
 
 angsd -ref ${REF} -anc ${ANC} -bam ${BAMLIST} -rf ${REGION} \
       -out reseq/${OUTFILE} -nThreads ${NTHREADS} \
-      -remove_bads 1 -uniqueOnly 1 -only_proper_pairs 0 -minMapQ 20 \
-      -GL 1 -doSaf 1 -doThetas 1 -pest reseq/${OUTFILE}_1DSFS.sfs
+      -remove_bads 1 -trim 0 -minMapQ 20 -minQ 20 -uniqueOnly 1 -only_proper_pairs 0 \
+      -baq 1 -C 50 \
+      -doCounts -1 -minInd $minI -setMinDepth $NIND -setMaxDepth $nMAX \
+      -dosnpstat 1 -doHWE 1 -sb_pval 5e-7 -qscore_pval 5e-9 -HWE_pval 5e-7 \
+      -doMajorMinor 1 -skipTriallelic 1 -GL 1 -doSaf 1 \
+      -doThetas 1 -pest reseq/${OUTFILE}_1DSFS.sfs
 
 thetaStat do_stat reseq/${OUTFILE}.thetas.idx -outnames reseq/${OUTFILE}.thetas.stats #global values
 thetaStat do_stat reseq/${OUTFILE}.thetas.idx -win 100000 -step 50000 -outnames reseq/${OUTFILE}.thetas.100kb.slwin #slidin-window values
@@ -102,24 +114,35 @@ realSFS fst stats ${F1}_${F2}.fst.idx > ${F1}_${F2}.fst.stats #global Fst values
 realSFS fst stats ${F1}_${F2}.fst.idx -win 100000 -step 50000 > ${F1}_${F2}.fst.100kb.slwin #sliding-window Fst values
 ```
 
-2. Genetic structure between all 5 species and between BFAL/LAAL was infered using PCA (see script `plot_PCA.sh`)
-
+2. Genetic structure between all 5 species and between BFAL/LAAL was infered using PCA (see script `plot_PCA.sh`) and Admixture
+```
+for K in $(seq 1 1 10); do
+    admixture -C=10 -c=10 -B1000 -j${NTHREADS} --cv=10  $INFILE.ped $K | tee ${INFILE}.log$K.out
+done
+```
 
 #### **Runs of homozygosity (ROHs)**
 ```
 for SP in BFAL LAAL
 do
-    angsd -bam ${SP}.bamlist -rf ${REGION} -out ${SP}_lightfilt -nThreads ${NTHREADS} \
-          -remove_bads 1 -uniqueOnly 1 -only_proper_pairs 0 -minMapQ 20 -minQ 20 -trim 0 \
-          -GL 1 -doMajorMinor 1 -skipTriallelic 1 -doMaf -1 -SNP_pval 1e-3 -doGeno-4 -doPost 1 -postCutoff 0.95 -doPlink 2
+    #Extract SNPs
+    angsd -ref ${REF} -bam ${SP}.bamlist -rf ${REGION} -out ${OUT} -nThreads ${NTHREADS} \
+          -remove_bads 1 -trim 0 -minMapQ 20 -minQ 20 -uniqueOnly 1 -only_proper_pairs 0 \
+          -baq 1 -C 50 \
+          -GL 1 -doMajorMinor 1 -skipTriallelic 1 \
+          -setMinDepth ${mnDEPTH} -setMaxDepth ${mxDEPTH} -dumpCounts 2 \
+          -doMaf -1 -SNP_pval 1e-6 -doGeno 20 -doPost 1 -postCutoff 0.95 \
+          -doPlink 2
 
-    for SCAFF in {1..3479}
-    do
-        plink --tped ${SP}_allscafs_lightfilt.tped --tfam ${SP}_allscafs_lightfilt.tfam --maf 0.05 --nonfounders \
-              --homozyg-snp 50 --homozyg-density 50 --homozyg-gap 1000 --homozyg-window-snp 50 --homozyg-window-het 1 --homozyg-window-missing 5 --homozyg-window-threshold 0.05 \
-              #--geno 0.1 --maf 0.05 --hwe 1e-5 \
-              --out ${oDIR}/BFAL_${SCAFF}_lfilt_w50_h1
-    done
+    #Compute ROHs
+    plink --tped ${OUT}.tped --tfam ${OUT}.tfam --out ${OUT} --allow-extra-chr --nonfounders \
+          --maf 0.05 --homozyg --homozyg-snp 50 --homozyg-density 50 --homozyg-gap 1000 \
+          --homozyg-window-snp 50 --homozyg-window-het 5 --homozyg-window-missing 5 \
+          --homozyg-window-threshold 0.05 --homozyg-kb 100
+
+     #LD-prune dataset
+     plink --tped ${OUT}.tped --tfam ${OUT}.tfam --out ${OUT}_LDpruned --allow-extra-chr \
+           --indep-pairwise 50 10 0.2
 done
 ```
 
@@ -140,8 +163,8 @@ done
 ```
 # Generate & run the batch file
 for SP in BFAL LAAL; do
-java -cp $PATH/TO/stairway_plot_es Stairbuilder ${SP}.blueprint
-bash ${SP}.blueprint.sh
+    java -cp $PATH/TO/stairway_plot_es Stairbuilder ${SP}.blueprint
+    bash ${SP}.blueprint.sh
 done
 ```
 ###### 3. dadi
