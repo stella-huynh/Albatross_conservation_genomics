@@ -173,5 +173,8 @@ wait
   
   
   
+#step 7: Run PASTA
+
+nohup ./run_pasta_UCEs.sh -p 5 > nohup_pasta_UCEs.out &
 
 
