@@ -163,7 +163,7 @@ wait
   sort -V check_nUCEs.txt | uniq 
   
   for SP in BFAL LAAL STAL WAAL WAL; do
-    rm -f check_UCEs_*.txt
+    rm -f check_UCEs_${SP}.txt
     for file in `ls gene_set/*`; do
       grep -c "^>${SP}" $file >> check_UCEs_${SP}.txt 
     done
