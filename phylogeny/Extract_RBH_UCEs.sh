@@ -164,7 +164,7 @@ wait
   
   for SP in BFAL LAAL STAL WAAL WAL; do
     rm -f check_UCEs_${SP}.txt check_UCEs_${SP}.err
-    for file in `ls gene_set/*`; do
+    for file in `ls gene_set/*.fasta`; do
       grep -c "^>${SP}" $file >> check_UCEs_${SP}.txt 
     done
     occ=$(cat check_UCEs_${SP}.txt | paste -sd+ | bc) ; echo "${SP} : ${occ} orthologous sequences extracted."
@@ -173,8 +173,79 @@ wait
   
   
   
-#step 7: Run PASTA
+#step 7: Run PASTA + trimAl
 
-nohup ./run_pasta_UCEs.sh -p 5 > nohup_pasta_UCEs.out &
+nohup ./run_pasta_UCEs.sh -p 5 > nohup_pasta_UCEs.out && wait
+
+for file in `ls gene_set/*.fasta`; do
+  PREFIX=$(echo $file | rev | cut -d"/" -f1 | rev | sed 's/.fasta//')
+  oDIR="gene_set/$PREFIX"
+  trimal  -in ${oDIR}/${PREFIX}.marker001.${PREFIX}.aln \
+          -out ${oDIR}/${PREFIX}.trim.aln \
+          -htmlout ${oDIR}/${PREFIX}.trim.html \
+          -automated1 &
+  sleep 2
+done
+
+
+
+#step 8 : run gene trees (RAxML-ng) using ParGenes
+
+module load mpich/gcc/3.1.4
+module load gcc/8.2.0
+
+for file in `ls gene_set/*.fasta`; do
+  PREFIX=$(echo $file | rev | cut -d"/" -f1 | rev | sed 's/.fasta//')
+  oDIR="gene_set/$PREFIX"
+
+  #infer gene trees
+  pargenes.py -a ${oDIR}/${PREFIX}.trim.aln -o ${oDIR}/${PREFIX}.trim.tree \
+              -d nt -c ${NTHREADS} -R "--model GTR" -b 100 --use-astral \
+              &> ${oDIR}/${PREFIX}.pargenes.log 
+  #export relevant data
+  export.py -i ${oDIR}/${PREFIX}.trim.tree -o ${oDIR}/${PREFIX}.trim.tree.export \
+            -best-ml-tree --best-ml-model --bootstrap-trees --support-values-tree \
+            &> ${oDIR}/${PREFIX}.pargexport.log
+  
+done
+
+
+#step 9 : run species tree (ASTRAL)
+
+find gene_set/ -name "*.bestTree" -type -f -exec -c sh 'cat "{}" >> gene_set/gene_trees.trim.bestTrees' ';' 
+
+#run species tree
+java -jar astral.5.7.3.jar -i gene_set/gene_trees.trim.bestTrees \
+                           -o gene_set/gene_trees.trim.species.tree \
+                           -t 1 \
+                           2> gene_set/gene_trees.trim.species.log &
+wait
+
+#estimate node supports
+java -jar astral.5.7.3.jar -q gene_set/gene_trees.trim.species.tree \
+                           -i gene_set/gene_trees.trim.bestTrees \
+                           -o gene_set/gene_trees.trim.species2.tree
+                           -t 2 \
+                           2> gene_set/gene_trees.trim.species2.log &
+wait
+
+
+
+#step 10: Do bootstrap analyses
+#ASTRAL recommand local posterior probability and quadripartition (the four clusters around a branch)
+
+#prepare bootstrap file
+???????
+gene_set/gene_trees.trim.bootList
+
+#bootstrap with ASTRAL
+#* As ASTRAL performs bootstrapping, it continually outputs the bootstrapped ASTRAL tree for each replicate. So, if the number of replicates is set to 100, it first outputs 100 trees. Then, it outputs a greedy consensus of all the 100 bootstrapped trees (with support drawn on branches). Finally, it performs the main analysis (i.e., on trees provided using -i option) and draws branch support on this main tree using the bootstrap replicates. Therefore, in this example, the output file will include 102 trees.
+#* What to use: The most important tree is the tree outputted at the end; this is the ASTRAL tree on main input trees, with support values drawn based on bootstrap replicates. Our analyses have shown this tree to be better than the consensus tree in most cases.
+
+java -jar astral.5.7.3.jar -i gene_set/gene_trees.trim.bestTrees \
+                           -b gene_set/gene_trees.trim.bootList \
+                           -o gene_set/gene_trees.trim.boot.species.tree \
+                           -r 100 &
+#Visualize in DensiTree
 
 
