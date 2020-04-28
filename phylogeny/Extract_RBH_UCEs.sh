@@ -163,12 +163,12 @@ wait
   sort -V check_nUCEs.txt | uniq 
   
   for SP in BFAL LAAL STAL WAAL WAL; do
-    rm -f check_UCEs_${SP}.txt
+    rm -f check_UCEs_${SP}.txt check_UCEs_${SP}.err
     for file in `ls gene_set/*`; do
       grep -c "^>${SP}" $file >> check_UCEs_${SP}.txt 
     done
     occ=$(cat check_UCEs_${SP}.txt | paste -sd+ | bc) ; echo "${SP} : ${occ} orthologous sequences extracted."
-    if [[ $occ != $(wc -l listF_uniq_UCEs.txt) ]]; then grep -v -n 1 check_UCEs_${SP}.txt > check_UCEs_${SP}.err ; fi #retrieve UCEs (lines) that has failed
+    if [[ $occ != $(wc -l listF_uniq_UCEs.txt | cut -d" " -f1 ) ]]; then grep -v -n 1 check_UCEs_${SP}.txt > check_UCEs_${SP}.err ; fi #retrieve UCEs (lines) that has failed
   done
   
   
