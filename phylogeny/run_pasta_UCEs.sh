@@ -36,7 +36,7 @@ if [[ $nparallel == "" || $nparallel != *[[:digit:]]* ]]; then nparallel=1 ; fi
 wDIR="/group/sbs_ssin/stella/albatross/05_reseq/initial_pipeline/06_ANGSDv2/05_RBlast/UCEs"
 iDIR="${wDIR}/gene_set"
 
-for file in `ls ${iDIR}/*`
+for file in `ls ${iDIR}/*.fasta`
 do
 
         PREFIX=$(echo $file | rev | cut -d"/" -f1 | rev | sed 's/UCE_//' | sed 's/.fasta//')
