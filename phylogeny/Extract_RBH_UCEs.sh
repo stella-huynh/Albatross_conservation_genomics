@@ -210,7 +210,9 @@ done
 #step 7: Run PASTA + trimAl
 
   nohup ./run_pasta_UCEs.sh -p 5 -i gene_set/ > nohup_pasta_F_UCEs.out && wait
+  find gene_set/ -not -empty -type f -name "*.marker001.*" -ls | wc -l #check all alignment have been generated correctly  
   nohup ./run_pasta_UCEs.sh -p 5 -i gene_set_EF/ > nohup_pasta_EF_UCEs.out && wait
+  find gene_set_EF/ -not -empty -type f -name "*.marker001.*" -ls | wc -l #check all alignment have been generated correctly  
 
   list=$(ls gene_set/*.fasta) ; dir="gene_set"
   list=$(ls gene_set_EF/*.fasta) ; dir="gene_set"
@@ -224,17 +226,22 @@ done
             -automated1 &
    sleep 2
   done
+  
+  find gene_set/ -not -empty -type f -name "*trim.aln" -ls | wc -l      #check all trimmed alignment have been generated correctly
+  find gene_set_EF/ -not -empty -type f -name "*trim.aln" -ls | wc -l   #check all trimmed alignment have been generated correctly
 
   #copy all ALN files to a new directory and simpler names
-  mkdir -p -m775 gene_set/alnF gene_set/alnF_trim
-  find gene_set/ -type f -name "*trim.aln" -exec cp {} gene_set/alnF_trim \;
+  mkdir -p -m775 alnF alnF_trim
+  find gene_set/ -type f -name "*trim.aln" -exec cp {} alnF_trim \;
   for file in $(find gene_set/ -type f -name "*.marker001*.aln") ; do
-    echo $file | sed -e "p;s/.*\/.*\/.*UCE/gene_set\/alnF_trim\/UCE/g" | xargs -n2 cp ; done
+    echo $file | sed -e "p;s/.*\/.*\/.*UCE/alnF\/UCE/g" | xargs -n2 cp ; done
+  mv alnF_trim gene_set/ ; mv alnF gene_set/
   #copy all ALN files to a new directory and simpler names
-  mkdir -p -m775 gene_set_EF/alnEF gene_set_EF/alnEF_trim
-  find gene_set/ -type f -name "*trim.aln" -exec cp {} gene_set/alnF_trim \;
+  mkdir -p -m775 alnEF alnEF_trim
+  find gene_set_EF/ -type f -name "*trim.aln" -exec cp {} alnEF_trim \;
   for file in $(find gene_set_EF/ -type f -name "*.marker001*.aln") ; do
-   echo $file | sed -e "p;s/.*\/.*\/.*UCE/gene_set_EF\/alnEF_trim\/UCE/g" | xargs -n2 cp ; done
+   echo $file | sed -e "p;s/.*\/.*\/.*UCE/alnEF\/UCE/g" | xargs -n2 cp ; done
+  mv alnEF_trim gene_set_EF/ ; mv alnEF gene_set_EF/
 
 
 #step 8 : run gene trees (RAxML-ng) using ParGenes
@@ -242,12 +249,17 @@ done
 module load mpich/gcc/3.1.4
 module load gcc/8.2.0
 
-for file in `ls gene_set/*.fasta`; do
-  PREFIX=$(echo $file | rev | cut -d"/" -f1 | rev | sed 's/.fasta//')
-  oDIR="gene_set/$PREFIX"
+
+pargenes.py -a gene_set_EF/aln_EF/ -o gene_set_EF/aln_EF/parGenes/ \
+            -d nt -c ${NTHREADS} -m \
+            --modeltest-global-parameters
+
+for file in `ls gene_set/aln_EF/*.aln`; do
+  PREFIX=$(echo $file | rev | cut -d"/" -f1 | rev | sed 's/.aln//')
+  oDIR="gene_set/aln_EF"
 
   #infer gene trees
-  pargenes.py -a 
+  
   #pargenes.py -a ${oDIR}/${PREFIX}.trim.aln -o ${oDIR}/${PREFIX}.trim.tree \
   #            -d nt -c ${NTHREADS} -R "--model GTR" -b 100 --use-astral \
   #            &> ${oDIR}/${PREFIX}.pargenes.log
