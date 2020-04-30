@@ -232,15 +232,18 @@ done
 
   #copy all ALN files to a new directory and simpler names
   mkdir -p -m775 alnF alnF_trim
-  find gene_set/ -type f -name "*trim.aln" -exec cp {} alnF_trim \;
+  for file in $(find gene_set/ -type f -name "*trim.aln"); do
+    seqkit replace -p "_ch.+$" -r "" $file > alnF_trim/$(echo $file | rev | cut -d"/" -f1 | rev); done  #find gene_set/ -type f -name "*trim.aln" -exec cp {} alnF_trim \;
   for file in $(find gene_set/ -type f -name "*.marker001*.aln") ; do
-    echo $file | sed -e "p;s/.*\/.*\/.*UCE/alnF\/UCE/g" | xargs -n2 cp ; done
+    seqkit replace -p "_ch.+$" -r "" $file > alnF/$(echo $file | rev | cut -d"." -f1-2 | rev); done     #echo $file | sed -e "p;s/.*\/.*\/.*UCE/alnF\/UCE/g" | xargs -n2 cp ; done
   mv alnF_trim gene_set/ ; mv alnF gene_set/
+
   #copy all ALN files to a new directory and simpler names
   mkdir -p -m775 alnEF alnEF_trim
-  find gene_set_EF/ -type f -name "*trim.aln" -exec cp {} alnEF_trim \;
+  for file in $(find gene_set_EF/ -type f -name "*trim.aln"); do
+    seqkit replace -p "_ch.+$" -r "" $file > alnEF_trim/$(echo $file | rev | cut -d"/" -f1 | rev); done #find gene_set_EF/ -type f -name "*trim.aln" -exec cp {} alnEF_trim \;
   for file in $(find gene_set_EF/ -type f -name "*.marker001*.aln") ; do
-   echo $file | sed -e "p;s/.*\/.*\/.*UCE/alnEF\/UCE/g" | xargs -n2 cp ; done
+    seqkit replace -p "_ch.+$" -r "" $file > alnEF/$(echo $file | rev | cut -d"." -f1-2 | rev); done    #echo $file | sed -e "p;s/.*\/.*\/.*UCE/alnEF\/UCE/g" | xargs -n2 cp ; done
   mv alnEF_trim gene_set_EF/ ; mv alnEF gene_set_EF/
 
 
@@ -252,14 +255,12 @@ module load gcc/8.2.0
 
 pargenes.py -a gene_set_EF/aln_EF/ -o gene_set_EF/aln_EF/parGenes/ \
             -d nt -c ${NTHREADS} -m \
-            --modeltest-global-parameters
+            --per-msa-modeltest-parameters --modeltest-criteria "AICc" --modeltest-perjob-cores 4 \
 
 for file in `ls gene_set/aln_EF/*.aln`; do
   PREFIX=$(echo $file | rev | cut -d"/" -f1 | rev | sed 's/.aln//')
   oDIR="gene_set/aln_EF"
 
-  #infer gene trees
-  
   #pargenes.py -a ${oDIR}/${PREFIX}.trim.aln -o ${oDIR}/${PREFIX}.trim.tree \
   #            -d nt -c ${NTHREADS} -R "--model GTR" -b 100 --use-astral \
   #            &> ${oDIR}/${PREFIX}.pargenes.log
