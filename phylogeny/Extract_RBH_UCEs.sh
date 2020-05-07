@@ -60,6 +60,7 @@ done
 
 ####################################################################
 
+
 ## step 1 : Extract UCEs found in all outgroup for each species
 
 for SP in BFAL LAAL STAL WAAL WAL; do 
@@ -68,6 +69,8 @@ for SP in BFAL LAAL STAL WAAL WAL; do
     | awk '{FS=OFS="\t"} NR==FNR {a[$1 FS $3]=$0; next} {idx=$1 FS $3 ; if(idx in a) print a[idx], $0}' - Megablast_UCEs_${SP}_GALGA.ubesthits.txt \
     > Megablast_UCEs_${SP}_all.ubesthits.txt
 done
+
+
 
 
 ## step 2 : Extract for each species the whole region that could aligned to any outgroup
@@ -87,6 +90,9 @@ done
       | cut -f1,3,21-23 \
       > Megablast_UCEs_${SP}_all_fullregionEF.ubesthits.txt
   done
+
+
+
 
 ## step 3a : Extract intersect region between all outgroups
 
@@ -115,6 +121,8 @@ done
   done
 
 
+
+
 ## step 3b : Only keep regions that aligned at least 50% of their full length onto EURHE($6)/FULGL($8)
 
   #based on all 4 outgroups
@@ -136,6 +144,9 @@ done
       | awk '{FS=OFS="\t"} $7 >= 0.5 {print $0}' \
       > Megablast_UCEs_${SP}_all_overlapEF.ubesthits.txt
   done
+
+
+
 
 ## step 4 : Extract (final) UCEs that are commonly retained in all species
 
@@ -161,6 +172,8 @@ done
       Megablast_UCEs_${SP}_all_overlapEF.ubesthits.txt listEF_uniq_UCEs.txt \
       > Megablast_UCEs_EF_${SP}.txtF
   done 
+
+
 
 
 #step 6: extract DNA sequences for each UCEs (one file per gene, all 4 species for each gene)
@@ -207,6 +220,7 @@ done
   
   
   
+  
 #step 7: Run PASTA + trimAl
 
   nohup ./run_pasta_UCEs.sh -p 5 -i gene_set/ > nohup_pasta_F_UCEs.out && wait
@@ -218,13 +232,13 @@ done
   list=$(ls gene_set_EF/*.fasta) ; dir="gene_set"
 
   for file in $list ; do
-   PREFIX=$(echo $file | rev | cut -d"/" -f1 | rev | sed 's/.fasta//')
-   oDIR="${dir}/$PREFIX"
-   trimal  -in ${oDIR}/${PREFIX}.marker001.${PREFIX}.aln \
+    PREFIX=$(echo $file | rev | cut -d"/" -f1 | rev | sed 's/.fasta//')
+    oDIR="${dir}/$PREFIX"
+    trimal  -in ${oDIR}/${PREFIX}.marker001.${PREFIX}.aln \
             -out ${oDIR}/${PREFIX}.trim.aln \
             -htmlout ${oDIR}/${PREFIX}.trim.html \
             -automated1 &
-   sleep 2
+    sleep 2
   done
   
   find gene_set/ -not -empty -type f -name "*trim.aln" -ls | wc -l      #check all trimmed alignment have been generated correctly
@@ -233,9 +247,9 @@ done
   #copy all ALN files to a new directory and uniform FASTA-headers across ALN files
   mkdir -p -m775 alnF alnF_trim
   for file in $(find gene_set/ -type f -name "*trim.aln"); do
-    seqkit replace -p "_ch.+$" -r "" $file > alnF_trim/$(echo $file | rev | cut -d"/" -f1 | rev); done  #find gene_set/ -type f -name "*trim.aln" -exec cp {} alnF_trim \;
+     seqkit replace -p "_ch.+$" -r "" $file > alnF_trim/$(echo $file | rev | cut -d"/" -f1 | rev); done  #find gene_set/ -type f -name "*trim.aln" -exec cp {} alnF_trim \;
   for file in $(find gene_set/ -type f -name "*.marker001*.aln") ; do
-    seqkit replace -p "_ch.+$" -r "" $file > alnF/$(echo $file | rev | cut -d"." -f1-2 | rev); done     #echo $file | sed -e "p;s/.*\/.*\/.*UCE/alnF\/UCE/g" | xargs -n2 cp ; done
+     seqkit replace -p "_ch.+$" -r "" $file > alnF/$(echo $file | rev | cut -d"." -f1-2 | rev); done     #echo $file | sed -e "p;s/.*\/.*\/.*UCE/alnF\/UCE/g" | xargs -n2 cp ; done
   mv alnF_trim gene_set/ ; mv alnF gene_set/
 
   #copy all ALN files to a new directory and uniform FASTA-headers across ALN files
@@ -254,7 +268,6 @@ done
 module load mpich/gcc/3.1.4
 module load gcc/8.2.0
 
-
 pargenes.py -a gene_set_EF/alnEF/ -o gene_set_EF/alnEF/parGenes \
             -d nt -c ${NTHREADS} \
             -m --modeltest-criteria "AICc" --modeltest-perjob-cores 4 \
@@ -264,11 +277,6 @@ pargenes.py -a gene_set/alnF/ -o gene_set/alnF/parGenes \
             -d nt -c ${NTHREADS} \
             -m --modeltest-criteria "AICc" --modeltest-perjob-cores 4 \
             --use-astral -b 100
-
-
-
-
-
 
 
 
