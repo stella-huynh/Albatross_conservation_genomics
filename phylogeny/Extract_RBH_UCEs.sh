@@ -230,7 +230,7 @@ done
   find gene_set/ -not -empty -type f -name "*trim.aln" -ls | wc -l      #check all trimmed alignment have been generated correctly
   find gene_set_EF/ -not -empty -type f -name "*trim.aln" -ls | wc -l   #check all trimmed alignment have been generated correctly
 
-  #copy all ALN files to a new directory and simpler names
+  #copy all ALN files to a new directory and uniform FASTA-headers across ALN files
   mkdir -p -m775 alnF alnF_trim
   for file in $(find gene_set/ -type f -name "*trim.aln"); do
     seqkit replace -p "_ch.+$" -r "" $file > alnF_trim/$(echo $file | rev | cut -d"/" -f1 | rev); done  #find gene_set/ -type f -name "*trim.aln" -exec cp {} alnF_trim \;
@@ -238,7 +238,7 @@ done
     seqkit replace -p "_ch.+$" -r "" $file > alnF/$(echo $file | rev | cut -d"." -f1-2 | rev); done     #echo $file | sed -e "p;s/.*\/.*\/.*UCE/alnF\/UCE/g" | xargs -n2 cp ; done
   mv alnF_trim gene_set/ ; mv alnF gene_set/
 
-  #copy all ALN files to a new directory and simpler names
+  #copy all ALN files to a new directory and uniform FASTA-headers across ALN files
   mkdir -p -m775 alnEF alnEF_trim
   for file in $(find gene_set_EF/ -type f -name "*trim.aln"); do
     seqkit replace -p "_ch.+$" -r "" $file > alnEF_trim/$(echo $file | rev | cut -d"/" -f1 | rev); done #find gene_set_EF/ -type f -name "*trim.aln" -exec cp {} alnEF_trim \;
@@ -247,67 +247,28 @@ done
   mv alnEF_trim gene_set_EF/ ; mv alnEF gene_set_EF/
 
 
-#step 8 : run gene trees (RAxML-ng) using ParGenes
+
+
+#step 8 : run gene trees (RAxML-ng) & species (ASTRAL) using ParGenes
 
 module load mpich/gcc/3.1.4
 module load gcc/8.2.0
 
 
-pargenes.py -a gene_set_EF/aln_EF/ -o gene_set_EF/aln_EF/parGenes/ \
-            -d nt -c ${NTHREADS} -m \
-            --per-msa-modeltest-parameters --modeltest-criteria "AICc" --modeltest-perjob-cores 4 \
+pargenes.py -a gene_set_EF/alnEF/ -o gene_set_EF/alnEF/parGenes \
+            -d nt -c ${NTHREADS} \
+            -m --modeltest-criteria "AICc" --modeltest-perjob-cores 4 \
+            --use-astral -b 100
 
-for file in `ls gene_set/aln_EF/*.aln`; do
-  PREFIX=$(echo $file | rev | cut -d"/" -f1 | rev | sed 's/.aln//')
-  oDIR="gene_set/aln_EF"
-
-  #pargenes.py -a ${oDIR}/${PREFIX}.trim.aln -o ${oDIR}/${PREFIX}.trim.tree \
-  #            -d nt -c ${NTHREADS} -R "--model GTR" -b 100 --use-astral \
-  #            &> ${oDIR}/${PREFIX}.pargenes.log
-  #export relevant data
-  export.py -i ${oDIR}/${PREFIX}.trim.tree -o ${oDIR}/${PREFIX}.trim.tree.export \
-            -best-ml-tree --best-ml-model --bootstrap-trees --support-values-tree \
-            &> ${oDIR}/${PREFIX}.pargexport.log
-  
-done
-
-
-#step 9 : run species tree (ASTRAL)
-
-find gene_set/ -name "*.bestTree" -type -f -exec -c sh 'cat "{}" >> gene_set/gene_trees.trim.bestTrees' ';' 
-
-#run species tree
-java -jar astral.5.7.3.jar -i gene_set/gene_trees.trim.bestTrees \
-                           -o gene_set/gene_trees.trim.species.tree \
-                           -t 1 \
-                           2> gene_set/gene_trees.trim.species.log &
-wait
-
-#estimate node supports
-java -jar astral.5.7.3.jar -q gene_set/gene_trees.trim.species.tree \
-                           -i gene_set/gene_trees.trim.bestTrees \
-                           -o gene_set/gene_trees.trim.species2.tree
-                           -t 2 \
-                           2> gene_set/gene_trees.trim.species2.log &
-wait
+pargenes.py -a gene_set/alnF/ -o gene_set/alnF/parGenes \
+            -d nt -c ${NTHREADS} \
+            -m --modeltest-criteria "AICc" --modeltest-perjob-cores 4 \
+            --use-astral -b 100
 
 
 
-#step 10: Do bootstrap analyses
-#ASTRAL recommand local posterior probability and quadripartition (the four clusters around a branch)
 
-#prepare bootstrap file
-???????
-gene_set/gene_trees.trim.bootList
 
-#bootstrap with ASTRAL
-#* As ASTRAL performs bootstrapping, it continually outputs the bootstrapped ASTRAL tree for each replicate. So, if the number of replicates is set to 100, it first outputs 100 trees. Then, it outputs a greedy consensus of all the 100 bootstrapped trees (with support drawn on branches). Finally, it performs the main analysis (i.e., on trees provided using -i option) and draws branch support on this main tree using the bootstrap replicates. Therefore, in this example, the output file will include 102 trees.
-#* What to use: The most important tree is the tree outputted at the end; this is the ASTRAL tree on main input trees, with support values drawn based on bootstrap replicates. Our analyses have shown this tree to be better than the consensus tree in most cases.
 
-java -jar astral.5.7.3.jar -i gene_set/gene_trees.trim.bestTrees \
-                           -b gene_set/gene_trees.trim.bootList \
-                           -o gene_set/gene_trees.trim.boot.species.tree \
-                           -r 100 &
-#Visualize in DensiTree
 
 
