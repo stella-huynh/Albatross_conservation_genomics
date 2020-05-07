@@ -161,8 +161,7 @@ done
     | awk '{FS=OFS="\t"}  NR==FNR {scaff[$1]=$0; next} {i=index($1,"_"); idx=substr($1,i+1); if(idx in scaff) print scaff[idx]}' - Megablast_UCEs_WAL_$suffix \
     > $outfile
 
-  #command below NOT useful anymore, solution found by replacing split(a,$1,"_") by index+substr in awk command.
-  #sed -i '/^chrun_random$/d' listF_uniq_UCEs.txt
+
 
 
 #step 5 : Retrieve the whole region of these final UCEs for each species
