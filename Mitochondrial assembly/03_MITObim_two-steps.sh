@@ -31,8 +31,7 @@ do
     MITObim.pl -start 1 -end 10 --clean \
                -sample ${SP} \
                -ref GRCg6a_genome \
-               -readpool ${wDIR}/data/${SP}_220bp_${BC}.R1.20M.paired.fastq.gz \
-               -pair ${wDIR}/data/${SP}_220bp_${BC}.R2.20M.paired.fastq.gz \
+               -readpool ${wDIR}/data/${SP}_220bp_${BC}.20M.paired.fastq.gz \
                -maf ${wDIR}/MIRA-GRCg6a-${SP}_assembly/MIRA-GRCg6a-${SP}_d_results/MIRA-GRCg6a-${SP}_out.maf \
                --redirect_tmp /data/huynhs \
                --mirapath /group/sbs_ssin/envs/mira_v4.0.2/bin/ \
