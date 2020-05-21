@@ -4,6 +4,29 @@ Commands and scripts from albatross genomics project
 
 ### **Genome assembly**
 
+Mitochondrial assembly with MITObim
+```
+for sp in BFAL LAAL STAL WAAL WAL ; do
+    for pair in R1 R2 ; do
+    
+        #subsample 20M reads from fragment library
+        seqkit sample -s 200 -n 20000000 -o ${sp}_220bp.${pair}.20M.fastq.gz
+        #subsample 20M reads from jumping library
+        seqkit sample -s 100 -n 20000000 -o ${sp}_3kb.${pair}.20M.fastq.gz
+        
+        #Step 1: initial assembly with MIRA 4.0
+        mira manifest_${sp}.conf &> mapping_${sp}.log
+        
+        #Step 2: baiting and iterative mapping with MITObim 1.7
+        interleave-fastqgz-MITOBIM.py ${sp}_220bp.R1.20M.fastq.gz ${sp}_220bp.R2.20M.fastq.gz > ${sp}_220bp.20M.fastq.gz
+        MITObim.pl  -sample ${sp} -ref GRCg6a_MT.dna.toplevel.fa \
+                    -start 1 -end 10 -readpool ${sp}_220bp.20M.fastq.gz -maf MIRA_${sp}_assembly/MIRA_${sp}_d_results/MIRA_${sp}_out.maf \
+                    --mirapath /group/sbs_ssin/envs/mira_v4.0.2/bin/ --redirect_tmp /usr/tmp/
+        
+    done
+done
+```
+
 #### **Satsuma alignment with chicken genome**
 
 Alignment
@@ -127,22 +150,20 @@ for SP in BFAL LAAL
 do
     #Extract SNPs
     angsd -ref ${REF} -bam ${SP}.bamlist -rf ${REGION} -out ${OUT} -nThreads ${NTHREADS} \
-          -remove_bads 1 -trim 0 -minMapQ 20 -minQ 20 -uniqueOnly 1 -only_proper_pairs 0 \
-          -baq 1 -C 50 \
+          -remove_bads 1 -trim 0 -minMapQ 20 -minQ 20 -uniqueOnly 1 -only_proper_pairs 0 -baq 1 -C 50 \
           -GL 1 -doMajorMinor 1 -skipTriallelic 1 \
           -setMinDepth ${mnDEPTH} -setMaxDepth ${mxDEPTH} -dumpCounts 2 \
           -doMaf -1 -SNP_pval 1e-6 -doGeno 20 -doPost 1 -postCutoff 0.95 \
           -doPlink 2
 
-    #Compute ROHs
-    plink --tped ${OUT}.tped --tfam ${OUT}.tfam --out ${OUT} --allow-extra-chr --nonfounders \
-          --maf 0.05 --homozyg --homozyg-snp 50 --homozyg-density 50 --homozyg-gap 1000 \
-          --homozyg-window-snp 50 --homozyg-window-het 5 --homozyg-window-missing 5 \
-          --homozyg-window-threshold 0.05 --homozyg-kb 100
+    #LD-prune dataset
+    plink --tped ${OUT}.tped --tfam ${OUT}.tfam --out ${OUT}_LDpruned --allow-extra-chr --indep-pairwise 50 10 0.2
 
-     #LD-prune dataset
-     plink --tped ${OUT}.tped --tfam ${OUT}.tfam --out ${OUT}_LDpruned --allow-extra-chr \
-           --indep-pairwise 50 10 0.2
+    #Compute ROHs
+    plink --tped ${OUT}_LDpruned.tped --tfam ${OUT}_LDpruned.tfam --out ${OUT}_LDpruned --allow-extra-chr --nonfounders \
+          --maf 0.05 --homozyg --homozyg-snp 50 --homozyg-density 50 --homozyg-gap 1000 --homozyg-kb 100 \
+          --homozyg-window-snp 50 --homozyg-window-het 5 --homozyg-window-missing 5 --homozyg-window-threshold 0.05
+          
 done
 ```
 
@@ -161,7 +182,7 @@ done
 ```
 ###### 2. Stairway Plot
 ```
-# Generate & run the batch file
+# Generate & run the blueprint file
 for SP in BFAL LAAL; do
     java -cp $PATH/TO/stairway_plot_es Stairbuilder ${SP}.blueprint
     bash ${SP}.blueprint.sh
@@ -172,4 +193,25 @@ See "Run_dadi.py"
 
 ###### 4.fastsimcoal2
 See "Run_fastsimcoal2.sh"
+
+
+## **Species phylogenies**
+#### 1. SNP-based: SNAPP & TreeMIX
+
+
+
+
+#### 2. UCEs-based: RAxML + ASTRAL
+
+
+
+
+#### 3. ortholog-based: RAxML + ASTRAL
+###### a. exons
+
+
+
+
+
+###### b. introns
 
