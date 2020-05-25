@@ -94,41 +94,59 @@ nohup ./run_parse_orthoGenes.sh WAL 5 gene_set/ > nohup_parseOrtho_WAL.out 2>&1 
 
 for i in {1..12619}
 do
-	#create gene folder for local alignment
-	mkdir -p -m775 gene_set/Blastallp_ALB_ORTH$i
+	oDIR="exon_set/Blastallp_ALB_ORTH$i" && mkdir -p -m775 ${oDIR}
 	
-	#reformat starting tree file
-	echo "(WAL_ORTH${i},((BFAL_ORTH${i},LAAL_ORTH${i}),(STAL_ORTH${i},WAAL_ORTH${i})))" > gene_set/Blastallp_ALB_ORTH$i/start_tree${i}.newick
+	#locally align orthologous sequences using MAFFT
+	mafft --nuc --adjustdirection --auto --op 2 --thread 4 \
+	      --progress ${FULL_PATH}/${oDIR}/Blastallp_ALB_ORTH$i.mafft.fas \
+	      ${oDIR}/Blastallp_ALB_ORTH$i.fasta \
+	      > ${oDIR}/Blastallp_ALB_ORTH$i.mafft.fas && wait
 	
-	#reformat fasta file
-	cp gene_set/Blastallp_ALB_ORTH$i.fasta gene_set/Blastallp_ALB_ORTH$i/.
-	for SP in BFAL LAAL STAL WAAL WAL; do
-		sed -i "s/\(^>${SP}_\).*$/\1ORTH${i}/g" gene_set/Blastallp_ALB_ORTH$i/Blastallp_ALB_ORTH$i.fasta
-	done
-	
-	#run iterative local alignment with PASTA + SATé (using MAFFT as aligner)
-	run_pasta.py \
-		--input gene_set/Blastallp_ALB_ORTH${i}.fasta \
-		--alignment-suffix=.aln \
-		--output-directory=gene_set/Blastallp_ALB_ORTH$i \
-		--datatype=dna \
-		--job gene_set/Blastallp_ALB_ORTH${i} \
-		--raxml-search-after \
-		--temporaries=/data/huynhs \
-		--treefile=gene_set/Blastallp_ALB_ORTH${i}/start_tree${i}.newick \
-		--num-cpus=${NCORE} \
-		--iter-limit=10 \
-		--aligner=mafft \
-		--merger=muscle \
-		--tree-estimator= &
-
+	#trim alignment from problematic gaps
+	trimAl -in ${oDIR}/Blastallp_ALB_ORTH$i.mafft.fas \
+	       -out ${oDIR}/Blastallp_ALB_ORTH$i.mafft.trim.aln \
+	       -htmlout ${oDIR}/Blastallp_ALB_ORTH$i.mafft.trim.html \
+	       -automated1 && wait
 done
 
 
+################################################################################
+# Check alignments completeness and remove the unresolved/small ones
+
+#get alignment info on %id
+  for file in `ls 05_alignments/exon_set/alnF/*`; do 
+  	PREFIX=$(echo $file | rev | cut -d"." -f2- | rev ) ; infoalign $file $PREFIX.infoalign -only -heading -name -alignlength -idcount -simcount -diffcount -change 2>/dev/null &
+  for file in `ls 05_alignments/exon_set/alnF_trim/*`; do 
+  	PREFIX=$(echo $file | rev | cut -d"." -f2- | rev ) ; infoalign $file $PREFIX.infoalign -only -heading -name -alignlength -idcount -simcount -diffcount -change 2>/dev/null &
+
+#cp files in new folders for ParGenes
+  for file in $(find 05_alignments/exon_set/ -type f -name "*.mafft.fas") ; do 
+	seqkit replace -p "_ORTH.+$" -r "" $file | sed 's/_R_//g' > 05_alignments/exon_set/alnF/$(echo $file | rev | cut -d"/" -f1 | rev); done &
+  for file in $(find 05_alignments/exon_set/ -type f -name "*.mafft.trim.aln") ; do 
+	seqkit replace -p "_ORTH.+$" -r "" $file | sed 's/_R_//g' > 05_alignments/exon_set/alnF_trim/$(echo $file | rev | cut -d"/" -f1 | rev); done &
+
+#check alignment completeness
+  for file in `ls 05_alignments/exon_set/alnF/*.mafft.fas` ; do 
+  	seqkit fx2tab -ln $file >> check_exons_alnF.txt ; 
+	nline=$(seqkit fx2tab -ln $file) ; if [[ $nline < 5 ]]; then echo $file >> check_exons_alnF2.txt ; fi ; done &
+  for file in `ls 05_alignments/exon_set/alnF_trim/*.mafft.trim.aln` ; do 
+  	seqkit fx2tab -ln $file >> check_exons_alnFtrim.txt 
+  	nline=$(seqkit fx2tab -ln $file) ; if [[ $nline < 5 ]]; then echo $file >> check_exons_alnFtrim2.txt ; fi ; done &
+wait
+#Remove bad/poor alignments
 
 
+################################################################################
+# Infer species tree phylogeny using RAxML+ASTRAL (in parGenes) 
 
+pargenes.py -a exon_set/alnF -o exon_set/alnF/parGenes \
+	    -m --modeltest-criteria "AICc" --modeltest-perjob-cores 4 --use-astral -b 100 -d nt -c 5 \
+	    &> nohup_exons_parGenes_alnF.out &
 
+pargenes.py -a exon_set/alnF_trim -o exon_set/alnF_trim/parGenes \
+	    -m --modeltest-criteria "AICc" --modeltest-perjob-cores 4 --use-astral -b 100 -d nt -c 5 \
+	    &> nohup_exons_parGenes_alnFtrim.out &
+wait
 
 
 
