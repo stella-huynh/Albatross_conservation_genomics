@@ -254,12 +254,12 @@ done
   #copy all ALN files to a new directory and uniform FASTA-headers across ALN files
   mkdir -p -m775 alnEF alnEF_trim
   for file in $(find gene_set_EF/ -type f -name "*trim.aln"); do
-    seqkit replace -p "_ch.+$" -r "" $file > alnEF_trim/$(echo $file | rev | cut -d"/" -f1 | rev); done #find gene_set_EF/ -type f -name "*trim.aln" -exec cp {} alnEF_trim \;
+    seqkit replace -p "_ch.+$" -r "" $file > alnEF_trim/$(echo $file | rev | cut -d"/" -f1 | rev) ; 
+    sed -i 's/_R_//g' $file ; done #find gene_set_EF/ -type f -name "*trim.aln" -exec cp {} alnEF_trim \;
   for file in $(find gene_set_EF/ -type f -name "*.marker001*.aln") ; do
-    seqkit replace -p "_ch.+$" -r "" $file > alnEF/$(echo $file | rev | cut -d"." -f1-2 | rev); done    #echo $file | sed -e "p;s/.*\/.*\/.*UCE/alnEF\/UCE/g" | xargs -n2 cp ; done
+    seqkit replace -p "_ch.+$" -r "" $file > alnEF/$(echo $file | rev | cut -d"." -f1-2 | rev) ; 
+    sed -i 's/_R_//g' $file ; done    #echo $file | sed -e "p;s/.*\/.*\/.*UCE/alnEF\/UCE/g" | xargs -n2 cp ; done
   mv alnEF_trim gene_set_EF/ ; mv alnEF gene_set_EF/
-
-
 
 
 #step 8 : run gene trees (RAxML-ng) & species (ASTRAL) using ParGenes
