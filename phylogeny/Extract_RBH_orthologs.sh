@@ -57,11 +57,33 @@ awk '{FS=OFS="\t"} NR==FNR {a[$2 FS $3]=$0; next} { idx=$1 FS $2 ; if(idx in a) 
 ################################################################################
 # Extract corresponding sequence data and separate by orthologous gene (ie. one fasta file per ortholog)
 
-nohup ./run_parse_orthoGenes.sh BFAL 1 gene_set/ > nohup_parseOrtho_BFAL.out 2>&1 &
-nohup ./run_parse_orthoGenes.sh LAAL 2 gene_set/ > nohup_parseOrtho_LAAL.out 2>&1 &
-nohup ./run_parse_orthoGenes.sh STAL 3 gene_set/ > nohup_parseOrtho_STAL.out 2>&1 &
-nohup ./run_parse_orthoGenes.sh WAAL 4 gene_set/ > nohup_parseOrtho_WAAL.out 2>&1 &
-nohup ./run_parse_orthoGenes.sh WAL 5 gene_set/ > nohup_parseOrtho_WAL.out 2>&1 &
+#nohup ./run_parse_orthoGenes.sh BFAL 1 gene_set/ > nohup_parseOrtho_BFAL.out 2>&1 &
+#nohup ./run_parse_orthoGenes.sh LAAL 2 gene_set/ > nohup_parseOrtho_LAAL.out 2>&1 &
+#nohup ./run_parse_orthoGenes.sh STAL 3 gene_set/ > nohup_parseOrtho_STAL.out 2>&1 &
+#nohup ./run_parse_orthoGenes.sh WAAL 4 gene_set/ > nohup_parseOrtho_WAAL.out 2>&1 &
+#nohup ./run_parse_orthoGenes.sh WAL 5 gene_set/ > nohup_parseOrtho_WAL.out 2>&1 &
+
+for SP in BFAL LAAL STAL WAAL WAL; do
+
+        if   [[ $SP == "BFAL" ]]; then COL=1 ; V="_v2" ; R=1
+        elif [[ $SP == "LAAL" ]]; then COL=2 ; V=""    ; R=0
+        elif [[ $SP == "STAL" ]]; then COL=3 ; V=""    ; R=0
+        elif [[ $SP == "WAAL" ]]; then COL=4 ; V=""    ; R=0
+        elif [[ $SP == "WAL"  ]]; then COL=5 ; V=""    ; R=0
+        fi
+
+        for i in `seq 1 $(cat ${FILE} | wc -l)` ; do
+
+            ((j=j%nparallel)); ((j++==0)) && wait
+            GENE=$( sed -n "$i p" ${FILE} | cut -f$COL )
+	    
+            ./run_gff2fa_merged.sh -g ${GENE} -a exon -gff ${rDIR}/${SP}_genome.all.gff -f ${rDIR}/${SP}_genome${V}.fasta \
+                                   -o ${oDIR}/ORTH${i}_exons_mraw.fasta -r $R -app ${SP} &
+        done
+        wait
+done
+wait
+
 
 #double-check one sequence of each species has effectively been retrieved in the output 
  #(12619 orthologs retained, should find 5 FASTA headers in each gene file)
