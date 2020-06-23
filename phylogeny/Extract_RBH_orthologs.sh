@@ -4,7 +4,9 @@
 ################################################################################
 # Extract unique best hit of each query (SP1) onto database (SP2)
 
-nohup bash run_extract_rbhits.sh list_proteins_${SP1}.txt Blastallp_${SP1}_${SP2}.txt Blastallp_${SP1}_${SP2}.besthits.txt &
+bash run_extract_rbhits.sh list_proteins_${SP1}.txt \
+	01_RBH_blastallp/Blastallp_${SP1}_${SP2}.txt \
+	02_BestHits//Blastallp_${SP1}_${SP2}.besthits.txt &
 
 
 
@@ -13,10 +15,11 @@ nohup bash run_extract_rbhits.sh list_proteins_${SP1}.txt Blastallp_${SP1}_${SP2
 
 
 SP1="BFAL"; SP2="STAL"
-awk -F'[ \t]' '{OFS="\t"} NR==FNR {a[$1 FS $2]=$1; b[$1 FS $2]=$2 ; next} {idx=$2 FS $1; if (idx in a) print a[idx], b[idx], $2, $1}' \
-	Blastallp_${SP1}_${SP2}.besthits.txt \
-	Blastallp_${SP2}_${SP1}.besthits.txt \
-	> Blastallp_${SP1}_${SP2}.ubesthits.txt
+awk -F '[ \t]' 'NR==FNR {a[$1 FS $2]=$0 ; next} {idx=$2 FS $1; if (idx in a) print a[idx], $0}' \
+	02_BestHits/Blastallp_${SP1}_${SP2}.besthits.txt \
+	02_BestHits/Blastallp_${SP2}_${SP1}.besthits.txt \
+	| sed 's/ \+/\t/g' \
+	> 03_unique_BestHits/Blastallp_${SP1}_${SP2}.ubesthits.txt
 
 
 
@@ -26,14 +29,14 @@ awk -F'[ \t]' '{OFS="\t"} NR==FNR {a[$1 FS $2]=$1; b[$1 FS $2]=$2 ; next} {idx=$
 
 for PAIR in BFAL_LAAL BFAL_STAL BFAL_WAAL BFAL_WAL LAAL_STAL LAAL_WAAL LAAL_WAL STAL_WAAL STAL_WAL WAAL_WAL 
 do 
-	file="Blastallp_${PAIR}.ubesthits.txt"
+	file="03_unique_BestHits/Blastallp_${PAIR}.ubesthits.txt"
 	check=$(diff <(awk -F'[ \t]' '{print $1,$2,$13,$14}' $file | cut -d" " -f1) <(awk -F'[ \t]' '{print $1,$2,$13,$14}' $file | cut -d" " -f4))
 	if [[ $check = "" ]]; then echo "ok"; else echo "not ok" ; fi
 done
 
 for PAIR in BFAL_LAAL BFAL_STAL BFAL_WAAL BFAL_WAL LAAL_STAL LAAL_WAAL LAAL_WAL STAL_WAAL STAL_WAL WAAL_WAL 
 do 
-	file="Blastallp_${PAIR}.ubesthits.txt"
+	file="03_unique_BestHits/Blastallp_${PAIR}.ubesthits.txt"
 	check=$(diff <(awk -F'[ \t]' '{print $1,$2,$13,$14}' $file | cut -d" " -f2) <(awk -F'[ \t]' '{print $1,$2,$13,$14}' $file | cut -d" " -f3))
 	if [[ $check = "" ]]; then echo "ok"; else echo "not ok" ; fi 
 done
@@ -42,7 +45,14 @@ done
 ################################################################################
 # Keep reciprocal best hits that are found between all 5 species
 
-awk '{FS=OFS="\t"} NR==FNR {a[$2 FS $3]=$0; next} { idx=$1 FS $2 ; if(idx in a) print a[idx]}' Blastallp_BFAL_all_ubesthits.txt <(sed 's/ /\t/g' Blastallp_LAAL_STAL.ubesthits.txt) | awk '{FS=OFS="\t"} NR==FNR {a[$2 FS $4]=$0; next} { idx=$1 FS $2 ; if(idx in a) print a[idx]}' - <(sed 's/ /\t/g' Blastallp_LAAL_WAAL.ubesthits.txt) | awk '{FS=OFS="\t"} NR==FNR {a[$2 FS $5]=$0; next} { idx=$1 FS $2 ; if(idx in a) print a[idx]}' - <(sed 's/ /\t/g' Blastallp_LAAL_WAL.ubesthits.txt) | awk '{FS=OFS="\t"} NR==FNR {a[$3 FS $4]=$0; next} { idx=$1 FS $2 ; if(idx in a) print a[idx]}' - <(sed 's/ /\t/g' Blastallp_STAL_WAAL.ubesthits.txt) | awk '{FS=OFS="\t"} NR==FNR {a[$3 FS $5]=$0; next} { idx=$1 FS $2 ; if(idx in a) print a[idx]}' - <(sed 's/ /\t/g' Blastallp_STAL_WAL.ubesthits.txt) | awk '{FS=OFS="\t"} NR==FNR {a[$4 FS $5]=$0; next} { idx=$1 FS $2 ; if(idx in a) print a[idx]}' - <(sed 's/ /\t/g' Blastallp_WAAL_WAL.ubesthits.txt) > Blastallp_ALB.ubesthist.txt
+awk '{FS=OFS="\t"} NR==FNR {a[$2 FS $3]=$0; next} { idx=$1 FS $2 ; if(idx in a) print a[idx]}' \
+	Blastallp_BFAL_all_ubesthits.txt <(sed 's/ /\t/g' Blastallp_LAAL_STAL.ubesthits.txt) \
+	| awk '{FS=OFS="\t"} NR==FNR {a[$2 FS $4]=$0; next} { idx=$1 FS $2 ; if(idx in a) print a[idx]}' - <(sed 's/ /\t/g' Blastallp_LAAL_WAAL.ubesthits.txt) \
+	| awk '{FS=OFS="\t"} NR==FNR {a[$2 FS $5]=$0; next} { idx=$1 FS $2 ; if(idx in a) print a[idx]}' - <(sed 's/ /\t/g' Blastallp_LAAL_WAL.ubesthits.txt) \
+	| awk '{FS=OFS="\t"} NR==FNR {a[$3 FS $4]=$0; next} { idx=$1 FS $2 ; if(idx in a) print a[idx]}' - <(sed 's/ /\t/g' Blastallp_STAL_WAAL.ubesthits.txt) \
+	| awk '{FS=OFS="\t"} NR==FNR {a[$3 FS $5]=$0; next} { idx=$1 FS $2 ; if(idx in a) print a[idx]}' - <(sed 's/ /\t/g' Blastallp_STAL_WAL.ubesthits.txt) \
+	| awk '{FS=OFS="\t"} NR==FNR {a[$4 FS $5]=$0; next} { idx=$1 FS $2 ; if(idx in a) print a[idx]}' - <(sed 's/ /\t/g' Blastallp_WAAL_WAL.ubesthits.txt) \
+	> Blastallp_ALB.ubesthist.txt
 
 #GFF markers type
   #maker-
