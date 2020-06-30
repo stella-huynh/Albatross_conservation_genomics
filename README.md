@@ -78,6 +78,9 @@ Rscript ReadCov_male_females.R
 ```
 Combine list of scaffolds mapped onto galGal6 Z/W chromosomes (Satsuma results) and list of scaffolds with 2x lower coverage in females than males ("Read_cov_male_females.R" results).
 
+Visualization of sequencing coverage of males vs. females along scaffolds can also be done with ANGSD (see "SeqCoverage_perscaff_slwin.sh").
+
+
 #### **Genetic diversity within BFAL and LAAL populations**
 
 Use short-tailed albatross *Phoebastria albatrus* (STAL) to infer ancestral states of alleles.
