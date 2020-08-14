@@ -1,5 +1,6 @@
 #!/bin/bash
 
+nparallel=2
 
 ## For ingroup and outgroup species ##
 
@@ -7,11 +8,10 @@
 
 angsd -ref $REF \
       -bam $BAMLIST \
-      -rf list_autosomes_scafs_forANGSD.txt \
+      -rf list_allscafs_forANGSD.txt \
       -out 01_depth/recal/$PREFIX.ACGTpersite \
       -nThreads 20 \
       -nInd $NIND \
-      -baq 1 \
       -doCounts 1 -doDepth 1 -dumpCounts 3
 
 # step 2: merge the .pos and .counts file together #
@@ -25,23 +25,29 @@ paste <(zcat 01_depth/recal/$PREFIX.ACGTpersite.pos.gz) \
 awk -v NIND=$NIND \
     'NR==1 {print $0} 
      NR>1 {printf "%s\t%d\t%d\t%.0f,%.0f,%.0f,%.0f\n", $1, $2, $3, $4/$3*NIND, $5/$3*NIND, $6/$3*NIND, $7/$3*NIND}' \
-     01_depth/recal/${SP}_ACGTpersite.txt > 01_depth/recal/${SP}_ACGTpersite.txtF
-
-    # merge the two ingroup species into one if needed #
-    awk '{FS=OFS="\t"} FNR==NR {scaff[$1 SUBSEP $2]=$0; next}
-                {idx=$1 SUBSEP $2; if(idx in scaff) print scaff[$1 SUBSEP $2], $0}' \
-           01_depth/recal/tmp/BFAL_ACGTpersite_${scaff}.tmp 01_depth/recal/tmp/LAAL_ACGTpersite_${scaff}.tmp \
-           | awk '{FS=OFS="\t"} {split($4,a,","); split($8,b,",")}
-                  {print $1,$2, $3+$7, a[1]+b[1]","a[2]+b[2]","a[3]+b[3]","a[4]+b[4]}' \
-           > 01_depth/recal/tmp/BFAL_LAAL_ACGTpersite_${scaff}.tmp
+     01_depth/recal/${SP}.ACGTpersite.txt \
+     > 01_depth/recal/${SP}.ACGTpersite.txtF
 
 # step 4: split file by scaffolds #
 
-cat 01_depth/recal/BFAL_ACGTpersite.txtF \
-    | awk -v PREFIX=$PREFIX '{FS=OFS="\t"} { split($1,a,":"); prevfile=ofile; 
-                             ofile="01_depth/recal/tmp/"PREFIX".ACGTpersite_"a[1]".tmp"; 
-                             if(NR > 1 && ofile != prevfile) close(prevfile); print $0 >> ofile }' \ 
-      01_depth/recal/BFAL_ACGTpersite.txtF &
+awk -v SP=$SP '{FS=OFS="\t"} { split($1,a,":"); prevfile=ofile; 
+               ofile="01_depth/recal/tmp/"SP".ACGTpersite_"a[1]".tmp"; 
+               if(NR > 1 && ofile != prevfile) close(prevfile); print $0 >> ofile }' \ 
+    01_depth/recal/${SP}.ACGTpersite.txtF &
+
+    # merge ingroup species into one if inferring common ancestor of several ingroups #
+    SP1="BFAL" ; SP2="LAAL" ; INGROUP="BFAL_LAAL"
+    for scaff in `cat list_allscafs.bed | cut -f1`
+    do
+          ((j=j%nparallel)); ((j++==0)) && wait
+          awk '{FS=OFS="\t"} FNR==NR {scaff[$1 SUBSEP $2]=$0; next}
+               {idx=$1 SUBSEP $2; if(idx in scaff) print scaff[$1 SUBSEP $2], $0}' \
+               01_depth/recal/tmp/${SP1}.ACGTpersite_${scaff}.tmp \
+               01_depth/recal/tmp/${SP2}.ACGTpersite_${scaff}.tmp \
+               | awk '{FS=OFS="\t"} {split($4,a,","); split($8,b,",")}
+                      {print $1,$2, $3+$7, a[1]+b[1]","a[2]+b[2]","a[3]+b[3]","a[4]+b[4]}' \
+               > 01_depth/recal/tmp/${INGROUP}.ACGTpersite_${scaff}.tmp
+    done
 
 # step 5: for each scaffold file, aggregate ingroup with outgroup files together #
 
@@ -61,7 +67,7 @@ awk '{FS=OFS="\t"} FNR==NR {scaff[$1 SUBSEP $2]=$0; next} {idx=$1 SUBSEP $2; if(
 
 # step 6: concatenate all scaffold files together #
 
-list=$(for s in `cat list_allscafs.bed | cut -f1`; do (echo "01_depth/recal/tmp/${INGROUP}_outG_ACGTpersite_$s.tmp "); done)
+list=$(for s in `cat list_allscafs.bed | cut -f1`; do (echo "01_depth/recal/tmp/${INGROUP}_outG.ACGTpersite_$s.tmp "); done)
 cat $list > 01_depth/recal/${INGROUP}_outG.ACGTpersite.txt
 cut -f4,5,6,7 01_depth/recal/${INGROUP}_outG.ACGTpersite.txt > 01_depth/recal/${INGROUP}_outG.ACGTpersite.txtF
 
@@ -93,7 +99,8 @@ paste <(cut -f1,2 ${INGROUP}_outG.ACGTpersite.txt)
 
 # step 9: recode probabilities into allele calls #
 
-awk '{FS=OFS="\t"} { 
+awk '{FS=OFS="\t"} 
+     { 
       if($6 >= 0.05 || $7 >= 0.05 || $8 >= 0.05 || $9 >= 0.05) nA=1 ; 
       if($10 >= 0.05 || $11 >= 0.05 || $12 >= 0.05 || $13 >= 0.05) nC=2 ; 
       if($14 >= 0.05 || $15 >= 0.05 || $16 >= 0.05 || $17 >= 0.05) nG=4 ; 
@@ -114,7 +121,8 @@ awk '{FS=OFS="\t"} {
       else if(n == 21) nc="D" ; 
       else if(n == 22) nc="B" ; 
       else nc="N" ; 
-      print $1, $2, nc ; nA=0 ; nC=0 ; nG=0 ; nT=0}'
+      print $1, $2, nc ; nA=0 ; nC=0 ; nG=0 ; nT=0
+     }'
   ${INGROUP}_outG.ACGTpersite.p_anc.txt \
   > ${INGROUP}_outG.ACGTpersite.p_anc.txtF
 
