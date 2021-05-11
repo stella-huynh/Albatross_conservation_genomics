@@ -129,6 +129,80 @@ awk '{FS=OFS="\t"}
 
 
 
+###############################################################################
+##   !!!!    TO BE CHECKED WITH ME BEFORE USING THE FOLLOWING PART    !!!!   ##
+###############################################################################
+
+
+
+# step 10: Fill in the missing sites if present...
+
+awk 'OFS="\t"{print $1, $2-1, $2}' ${INGROUP}_outG.ACGTpersite.p_anc.txtF \
+   | bedtools merge -i - \
+   | bedtools complement -i - -g <( cut -f1,3 list_allscafs.bed )
+   > ${INGROUP}_outG.ACGTpersite.p_anc.complement.bed
+
+   #... with allele from the closest selected outgroup species
+   seqkit subseq -w0 --bed ${INGROUP}_outG.ACGTpersite.p_anc.complement.bed \
+        ${OUTG1}_genome.fasta \
+        > ${INGROUP}_outG.ACGTpersite.p_anc.complement.fasta
+
+   grep "^>" ${INGROUP}_outG.ACGTpersite.p_anc.complement.fasta \
+        | sed 's/>//g' | sed 's/:.//g' \
+        | awk -F'[_-]' '{OFS="\t"; for (i = $3; i <= $4; ++i) print $1"_"$2, i}' \
+        > ${INGROUP}_outG.ACGTpersite.p_anc.complement.txt1 &
+
+   grep -v "^>" ${INGROUP}_outG.ACGTpersite.p_anc.complement.fasta \
+        | fold -w1 > ${INGROUP}_outG.ACGTpersite.p_anc.complement.txt2 &
+
+   paste ${INGROUP}_outG.ACGTpersite.p_anc.complement.txt1 \
+         ${INGROUP}_outG.ACGTpersite.p_anc.complement.txt2 \
+         > ${INGROUP}_outG.ACGTpersite.p_anc.complement.txt0
+
+   cat ${INGROUP}_outG.ACGTpersite.p_anc.txtF \
+       ${INGROUP}_outG.ACGTpersite.p_anc.complement.txt0 \
+       > ${INGROUP}_outG.ACGTpersite.p_anc.complement.txtF
+
+   sort -V ${INGROUP}_outG.ACGTpersite.p_anc.complement.txtF \
+           > ${INGROUP}_outG.ACGTpersite.p_anc.complement.txtF0
+
+
+
+# step 11: Convert ancestral genome to FASTA format
+
+awk '{FS=OFS="\t"} { prevfile=ofile;
+     ofile="05_uSFS/est-sfs/tmp/BFAL_LAAL_outG.noBAQ.ACGTpersite.p_anc.complement_"$1".tmp";
+     if(NR > 1 && ofile != prevfile) close(prevfile); print $0 >> ofile }' \
+     ${INGROUP}_outG.ACGTpersite.p_anc.complement.txtF0
+
+rm -f ${INGROUP}_outG.ACGTpersite.ancGenome.fasta0
+for scaff in `cat list_allscafs.bed | cut -f1`
+do
+
+        file="tmp/${INGROUP}_outG.ACGTpersite.p_anc.complement_${scaff}.tmp"
+        seq=$( cut -f3 $file | awk '{print}' ORS='' )
+
+        echo -e ">${scaff}\n${seq}" >> ${INGROUP}_outG.ACGTpersite.ancGenome.fasta0
+
+done
+
+seqkit seq -w60 ${INGROUP}_outG.ACGTpersite.ancGenome.fasta0 \
+                > ${INGROUP}_outG.ACGTpersite.ancGenome.fasta
+
+module load samtools/1.4
+samtools faidx ${INGROUP}_outG.ACGTpersite.ancGenome.fasta
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
