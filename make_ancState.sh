@@ -91,8 +91,13 @@ wait
 
 # step 8: merge est-sfs outputs with scaffolds' coordinates #
 
-cat ${INGROUP}_outG.ACGTpersite.txtF-*.p_anc > ${INGROUP}_outG.ACGTpersite.p_anc
-paste <(cut -f1,2 ${INGROUP}_outG.ACGTpersite.txt) 
+rm -f ${INGROUP}_outG.ACGTpersite.p_anc
+for file in `ls ${INGROUP}_outG.ACGTpersite.txtF-*.p_anc`
+do
+      sed '1,8d' $file >> ${INGROUP}_outG.ACGTpersite.p_anc
+done
+
+paste <(cut -f1,2 ${INGROUP}_outG.ACGTpersite.txt) \
       ${INGROUP}_outG.ACGTpersite.p_anc \
       > ${INGROUP}_outG.ACGTpersite.p_anc.txt
 
