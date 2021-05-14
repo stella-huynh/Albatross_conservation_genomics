@@ -30,6 +30,7 @@ awk -v NIND=$NIND \
 
 # step 4: split file by scaffolds #
 
+rm -f 01_depth/recal/tmp/*.tmp #to avoid duplicating tmp file contents
 awk -v SP=$SP '{FS=OFS="\t"} { split($1,a,":"); prevfile=ofile; 
                ofile="01_depth/recal/tmp/"SP".ACGTpersite_"a[1]".tmp"; 
                if(NR > 1 && ofile != prevfile) close(prevfile); print $0 >> ofile }' \ 
