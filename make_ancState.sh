@@ -149,14 +149,14 @@ nparallel=2
       | bedtools complement -i - -g <( cut -f1,3 list_allscafs.bed )
       > ${INGROUP}_outG.ACGTpersite.p_anc.complement.bed
       
-      # a. method 2 : with N's
+      # a. method 1 : with N's
             # write positions in list format and add N's in last column
             awk '{OFS="\t"; for (i = $2+1; i <= $3; ++i) print $1, i}' \
             ${INGROUP}_outG.ACGTpersite.p_anc.complement.bed \
             | sed "s/$/\tN/g" \
             > ${INGROUP}_outG.ACGTpersite.p_anc.complement_Ns.txt0
 
-      # b. method 1 : with alleles from the closest selected outgroup species
+      # b. method 2 : with alleles from the closest selected outgroup species
             # extract DNA sequences of corresponding regions
             seqkit subseq -w0 --bed ${INGROUP}_outG.ACGTpersite.p_anc.complement.bed \
                  ${OUTG1}_genome.fasta \
