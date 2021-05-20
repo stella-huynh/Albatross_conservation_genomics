@@ -152,6 +152,11 @@ awk 'OFS="\t"{print $1, $2-1, $2}' ${INGROUP}_outG.ACGTpersite.p_anc.txtF \
    seqkit subseq -w0 --bed ${INGROUP}_outG.ACGTpersite.p_anc.complement.bed \
         ${OUTG1}_genome.fasta \
         > ${INGROUP}_outG.ACGTpersite.p_anc.complement.fasta
+   #... with Ns (same as before but convert all nucleotides to N)
+   seqkit subseq -w0 --bed ${INGROUP}_outG.ACGTpersite.p_anc.complement.bed \
+        ${OUTG1}_genome.fasta \
+        | awk '/^>/ {print $0} /^N*$/ {print $0} !/^>/ && gsub(/[ACGTacgt]/,"N",$1) {print $0}' \
+        > ${INGROUP}_outG.ACGTpersite.p_anc.complement_Ns.fasta
 
    grep "^>" ${INGROUP}_outG.ACGTpersite.p_anc.complement.fasta \
         | sed 's/>//g' | sed 's/:.//g' \
