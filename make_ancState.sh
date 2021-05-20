@@ -141,35 +141,48 @@ awk '{FS=OFS="\t"}
 
 
 
-# step 10: Fill in the missing sites if present...
+# step 10: Fill in the missing sites in inferred ancestral genome (if present)
 
-awk 'OFS="\t"{print $1, $2-1, $2}' ${INGROUP}_outG.ACGTpersite.p_anc.txtF \
-   | bedtools merge -i - \
-   | bedtools complement -i - -g <( cut -f1,3 list_allscafs.bed )
-   > ${INGROUP}_outG.ACGTpersite.p_anc.complement.bed
+   ### Extract the missing regions and fill them ...
+   awk 'OFS="\t"{print $1, $2-1, $2}' ${INGROUP}_outG.ACGTpersite.p_anc.txtF \
+      | bedtools merge -i - \
+      | bedtools complement -i - -g <( cut -f1,3 list_allscafs.bed )
+      > ${INGROUP}_outG.ACGTpersite.p_anc.complement.bed
 
-   #... with allele from the closest selected outgroup species
+   # a. with alleles from the closest selected outgroup species
    seqkit subseq -w0 --bed ${INGROUP}_outG.ACGTpersite.p_anc.complement.bed \
         ${OUTG1}_genome.fasta \
         > ${INGROUP}_outG.ACGTpersite.p_anc.complement.fasta
-   #... with Ns (same as before but convert all nucleotides to N)
+   # b. with Ns (same command as before but convert all nucleotides to N)
    seqkit subseq -w0 --bed ${INGROUP}_outG.ACGTpersite.p_anc.complement.bed \
         ${OUTG1}_genome.fasta \
         | awk '/^>/ {print $0} /^N*$/ {print $0} !/^>/ && gsub(/[ACGTacgt]/,"N",$1) {print $0}' \
         > ${INGROUP}_outG.ACGTpersite.p_anc.complement_Ns.fasta
-
+        
+   ### Make text file with each single position and corresponding allele written per line :
+   
+   ## a. Intermediate file with each position
+   # a1. if scaffold / chromosome names contain one "_", eg. "scaffold_1" / "chr_1"
    grep "^>" ${INGROUP}_outG.ACGTpersite.p_anc.complement.fasta \
         | sed 's/>//g' | sed 's/:.//g' \
         | awk -F'[_-]' '{OFS="\t"; for (i = $3; i <= $4; ++i) print $1"_"$2, i}' \
         > ${INGROUP}_outG.ACGTpersite.p_anc.complement.txt1 &
-
+   # a2. if scaffold / chromosome names DOES NOT contain "_", eg. "chr1"/"1"
+   grep "^>" ${INGROUP}_outG.ACGTpersite.p_anc.complement.fasta \
+        | sed 's/>//g' | sed 's/:.//g' \
+        | awk -F'[_-]' '{OFS="\t"; for (i = $2; i <= $3; ++i) print $1, i}' \
+        > ${INGROUP}_outG.ACGTpersite.p_anc.complement.txt1 &
+        
+   ## b. Intermediate file with corresponding nucleotides
    grep -v "^>" ${INGROUP}_outG.ACGTpersite.p_anc.complement.fasta \
         | fold -w1 > ${INGROUP}_outG.ACGTpersite.p_anc.complement.txt2 &
 
+   ## c. Combine positions and nucleotides next to each other
    paste ${INGROUP}_outG.ACGTpersite.p_anc.complement.txt1 \
          ${INGROUP}_outG.ACGTpersite.p_anc.complement.txt2 \
          > ${INGROUP}_outG.ACGTpersite.p_anc.complement.txt0
-
+         
+   ## d. Combine ancestral positions and missing positions and sort by scaffold/chr and positions
    cat ${INGROUP}_outG.ACGTpersite.p_anc.txtF \
        ${INGROUP}_outG.ACGTpersite.p_anc.complement.txt0 \
        > ${INGROUP}_outG.ACGTpersite.p_anc.complement.txtF
